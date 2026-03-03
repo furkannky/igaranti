@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "465161482930",
+    "project_id": "igaranti",
+    "storage_bucket": "igaranti.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:465161482930:android:f46f4501f9f728869f0fab",
+        "android_client_info": {
+          "package_name": "com.example.igaranti"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCEHzIOUIRhIxR5JzFe60nv1eU7tdh01Fw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
