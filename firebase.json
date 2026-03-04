@@ -1,1 +1,41 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"igaranti","appId":"1:465161482930:android:f46f4501f9f728869f0fab","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"igaranti","appId":"1:465161482930:ios:466e04a720ce1f189f0fab","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"macos":{"default":{"projectId":"igaranti","appId":"1:465161482930:ios:466e04a720ce1f189f0fab","uploadDebugSymbols":false,"fileOutput":"macos/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"igaranti","configurations":{"android":"1:465161482930:android:f46f4501f9f728869f0fab","ios":"1:465161482930:ios:466e04a720ce1f189f0fab"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "igaranti",
+          "appId": "1:465161482930:android:f46f4501f9f728869f0fab",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "igaranti",
+          "appId": "1:465161482930:ios:466e04a720ce1f189f0fab",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "igaranti",
+          "appId": "1:465161482930:ios:466e04a720ce1f189f0fab",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "igaranti",
+          "configurations": {
+            "android": "1:465161482930:android:f46f4501f9f728869f0fab",
+            "ios": "1:465161482930:ios:466e04a720ce1f189f0fab"
+          }
+        }
+      }
+    }
+  }
+}

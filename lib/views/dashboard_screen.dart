@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../controllers/product_controller.dart';
 import '../models/product_model.dart';
 import 'package:intl/intl.dart';
+import 'product_detail_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -23,7 +24,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("iGaranti Takip", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          "iGaranti Takip",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -31,39 +35,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
               await AuthService().signOut();
             },
           ),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none)),
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.notifications_none),
+          ),
         ],
       ),
       body: StreamBuilder<List<ProductModel>>(
         stream: productController.getProducts(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "Veriler çekilirken bir hata oluştu:\n${snapshot.error}",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            );
+          }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            debugPrint("❌ Gösterilecek ürün yok");
             return const Center(child: Text("Henüz kayıtlı ürünün yok."));
           }
 
           // Filtreleme Mantığı:
           // Arama kutusu boşsa tüm liste, doluysa filtrelenmiş liste döner.
           final filteredProducts = snapshot.data!.where((p) {
-            final matchesName = p.name.toLowerCase().contains(searchQuery.toLowerCase());
-            final matchesBrand = p.brand.toLowerCase().contains(searchQuery.toLowerCase());
+            final matchesName = p.name.toLowerCase().contains(
+              searchQuery.toLowerCase(),
+            );
+            final matchesBrand = p.brand.toLowerCase().contains(
+              searchQuery.toLowerCase(),
+            );
             return matchesName || matchesBrand;
           }).toList();
 
           return Column(
             children: [
-              _buildStats(snapshot.data!), // İstatistikler her zaman genel listeyi baz alsın
-
+              _buildStats(
+                snapshot.data!,
+              ), // İstatistikler her zaman genel listeyi baz alsın
               // Arama Çubuğu
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: "Ürün veya marka ara...",
                     prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                     filled: true,
                     fillColor: Colors.grey[100],
                   ),
@@ -78,14 +108,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               // Ürün Listesi
               Expanded(
-                child: filteredProducts.isEmpty 
-                  ? const Center(child: Text("Aranan kriterde ürün bulunamadı."))
-                  : ListView.builder(
-                      itemCount: filteredProducts.length,
-                      itemBuilder: (context, index) {
-                        return _buildProductCard(filteredProducts[index]);
-                      },
-                    ),
+                child: filteredProducts.isEmpty
+                    ? const Center(
+                        child: Text("Aranan kriterde ürün bulunamadı."),
+                      )
+                    : ListView.builder(
+                        itemCount: filteredProducts.length,
+                        itemBuilder: (context, index) {
+                          return _buildProductCard(filteredProducts[index]);
+                        },
+                      ),
               ),
             ],
           );
@@ -94,8 +126,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
-            context, 
-            MaterialPageRoute(builder: (context) => const AddProductScreen())
+            context,
+            MaterialPageRoute(builder: (context) => const AddProductScreen()),
           );
         },
         child: const Icon(Icons.add),
@@ -117,8 +149,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _statItem("Toplam", products.length.toString()),
-          _statItem("Aktif", products.where((p) => p.remainingDays > 0).length.toString()),
-          _statItem("Biten", products.where((p) => p.remainingDays <= 0).length.toString()),
+          _statItem(
+            "Aktif",
+            products.where((p) => p.remainingDays > 0).length.toString(),
+          ),
+          _statItem(
+            "Biten",
+            products.where((p) => p.remainingDays <= 0).length.toString(),
+          ),
         ],
       ),
     );
@@ -127,36 +165,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _statItem(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
         Text(label, style: const TextStyle(color: Colors.grey)),
       ],
     );
   }
 
   Widget _buildProductCard(ProductModel product) {
-    Color statusColor = product.remainingDays < 30 ? Colors.orange : Colors.green;
+    Color statusColor = product.remainingDays < 30
+        ? Colors.orange
+        : Colors.green;
     if (product.remainingDays <= 0) statusColor = Colors.red;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: statusColor.withOpacity(0.2),
-          child: Icon(Icons.inventory_2, color: statusColor),
-        ),
-        title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text("${product.brand} - ${product.category}"),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              product.remainingDays > 0 ? "${product.remainingDays} gün" : "Süresi Doldu",
-              style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProductDetailScreen(product: product),
             ),
-            Text(DateFormat('dd/MM/yyyy').format(product.expiryDate), style: const TextStyle(fontSize: 10)),
-          ],
+          );
+        },
+        borderRadius: BorderRadius.circular(15),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: statusColor.withOpacity(0.2),
+            child: Icon(Icons.inventory_2, color: statusColor),
+          ),
+          title: Text(
+            product.name,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text("${product.brand} - ${product.category}"),
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                product.remainingDays > 0
+                    ? "${product.remainingDays} gün"
+                    : "Süresi Doldu",
+                style: TextStyle(
+                  color: statusColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                DateFormat('dd/MM/yyyy').format(product.expiryDate),
+                style: const TextStyle(fontSize: 10),
+              ),
+            ],
+          ),
         ),
       ),
     );

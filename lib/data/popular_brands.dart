@@ -33,9 +33,9 @@ class PopularBrands {
 
   static List<String> getAllBrands() {
     Set<String> allBrands = {};
-    brandsByCategory.values.forEach((brands) {
+    for (var brands in brandsByCategory.values) {
       allBrands.addAll(brands);
-    });
+    }
     return allBrands.toList()..sort();
   }
 }

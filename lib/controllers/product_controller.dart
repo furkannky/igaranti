@@ -16,48 +16,67 @@ class ProductController extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   // Yeni Ürün Ekleme (Kullanıcıya Bağlı)
-  Future<void> addProduct(ProductModel product, File? imageFile) async {
+  Future<void> addProduct(ProductModel product, List<File>? imageFiles) async {
     final String? uid = _auth.currentUser?.uid;
     if (uid == null) {
       debugPrint("Hata: Kullanıcı girişi yapılmamış!");
-      return; 
+      return;
     }
+
+    debugPrint("🔥 Ürün ekleniyor - Kullanıcı ID: $uid");
+    debugPrint("🔥 Ürün bilgisi: ${product.name} - ${product.brand}");
 
     _isLoading = true;
     notifyListeners();
 
     try {
-      String? invoiceImageUrl;
-      if (imageFile != null) {
-        invoiceImageUrl = await _storageService.uploadInvoiceImage(imageFile);
+      List<String>? imageUrls;
+      if (imageFiles != null && imageFiles.isNotEmpty) {
+        debugPrint("🔥 Fotoğraflar yükleniyor...");
+        imageUrls = await _storageService.uploadMultipleImages(imageFiles);
+        debugPrint("🔥 Fotoğraflar yüklendi: $imageUrls");
       }
 
       Map<String, dynamic> data = product.toMap();
       data['userId'] = uid;
-      data['invoiceImageUrl'] = invoiceImageUrl;
+
+      // Geriye dönük uyumluluk: Eski invoiceImageUrl property'si için ilk görsel atanır
+      if (imageUrls != null && imageUrls.isNotEmpty) {
+        data['invoiceImageUrl'] = imageUrls.first;
+        data['imageUrls'] = imageUrls;
+      } else {
+        data['invoiceImageUrl'] = null;
+        data['imageUrls'] = <String>[];
+      }
+
       // Servis geçmişi başlangıçta boş bir liste olarak eklenebilir
-      data['serviceHistory'] = []; 
+      data['serviceHistory'] = [];
 
+      debugPrint("🔥 Firestore'a kaydediliyor: ${data.keys}");
       final docRef = await _firestore.collection('products').add(data);
+      debugPrint("🔥 Ürün başarıyla kaydedildi - Document ID: ${docRef.id}");
 
-      // Bildirim Kurulumu
-      int notificationId = docRef.id.hashCode;
-      await _notificationService.scheduleWarrantyNotification(
-        id: notificationId,
-        title: "Garanti Hatırlatıcısı ⏳",
-        body: "${product.name} ürününün garantisi 1 ay sonra bitiyor!",
-        scheduledDate: product.expiryDate.subtract(const Duration(days: 30)),
-      );
+      try {
+        // Bildirim Kurulumu
+        int notificationId = docRef.id.hashCode;
+        await _notificationService.scheduleWarrantyNotification(
+          id: notificationId,
+          title: "Garanti Hatırlatıcısı ⏳",
+          body: "${product.name} ürününün garantisi 1 ay sonra bitiyor!",
+          scheduledDate: product.expiryDate.subtract(const Duration(days: 30)),
+        );
 
-      await _notificationService.scheduleWarrantyNotification(
-        id: notificationId + 1,
-        title: "DİKKAT: Garanti Bitiyor! ⚠️",
-        body: "${product.name} ürününün garantisi önümüzdeki hafta doluyor.",
-        scheduledDate: product.expiryDate.subtract(const Duration(days: 7)),
-      );
-      
+        await _notificationService.scheduleWarrantyNotification(
+          id: notificationId + 1,
+          title: "DİKKAT: Garanti Bitiyor! ⚠️",
+          body: "${product.name} ürününün garantisi önümüzdeki hafta doluyor.",
+          scheduledDate: product.expiryDate.subtract(const Duration(days: 7)),
+        );
+      } catch (e) {
+        debugPrint("Bildirim ekleme hatası (önemsiz): $e");
+      }
     } catch (e) {
-      debugPrint("Ürün ekleme hatası: $e");
+      debugPrint("❌ Ürün ekleme hatası: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -69,9 +88,9 @@ class ProductController extends ChangeNotifier {
     try {
       // FieldValue.arrayUnion kullanarak listenin sonuna yeni kaydı ekliyoruz
       await _firestore.collection('products').doc(productId).update({
-        'serviceHistory': FieldValue.arrayUnion([record.toMap()])
+        'serviceHistory': FieldValue.arrayUnion([record.toMap()]),
       });
-      
+
       debugPrint("Servis kaydı başarıyla eklendi.");
       notifyListeners(); // UI'ın güncellenmesi için
     } catch (e) {
@@ -83,16 +102,151 @@ class ProductController extends ChangeNotifier {
   Stream<List<ProductModel>> getProducts() {
     final String? uid = _auth.currentUser?.uid;
 
-    if (uid == null) return Stream.value([]);
-    
+    debugPrint("🔥 getProducts çağrıldı - Kullanıcı ID: $uid");
+
+    if (uid == null) {
+      debugPrint("❌ Kullanıcı ID null, boş liste dönüyor");
+      return Stream.value([]);
+    }
+
+    debugPrint("🔥 Firestore sorgusu yapılıyor - userId: $uid");
+
+    // Güvenlik kuralları gereği (Firebase Rules) tüm koleksiyonu okumaya iznimiz yok.
+    // Bu nedenle mutlaka .where() ile filtrelemeliyiz, yoksa "Permission Denied" hatası alırız.
     return _firestore
         .collection('products')
         .where('userId', isEqualTo: uid)
-        .orderBy('expiryDate', descending: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ProductModel.fromMap(doc.data(), doc.id))
-            .toList());
+        .map((snapshot) {
+          debugPrint(
+            "🔥 Firestore'dan toplam ${snapshot.docs.length} ürün geldi",
+          );
+
+          final userProducts = snapshot.docs
+              .map((doc) {
+                final data = doc.data();
+                debugPrint("🔥 Ürün verisi: $data");
+                debugPrint(
+                  "🔥 Ürün adı: ${data['name']} - userId: ${data['userId']}",
+                );
+
+                try {
+                  final product = ProductModel.fromMap(data, doc.id);
+                  debugPrint("🔥 ProductModel oluşturuldu: ${product.name}");
+                  return product;
+                } catch (e) {
+                  debugPrint("❌ ProductModel oluşturma hatası: $e");
+                  debugPrint("❌ Hatalı veri: $data");
+                  return null;
+                }
+              })
+              .where((product) => product != null)
+              .cast<ProductModel>()
+              .toList();
+
+          // Bileşik dizin hatası olmaması için cihaz (client) tarafında sıralıyoruz
+          userProducts.sort((a, b) => a.expiryDate.compareTo(b.expiryDate));
+
+          debugPrint(
+            "🔥 Kullanıcının sıralı ürün sayısı: ${userProducts.length}",
+          );
+          return userProducts;
+        });
+  }
+
+  // Ürün Güncelleme (Düzenleme özelliği için yeni eklendi)
+  Future<void> updateProduct(
+    ProductModel product, {
+    List<File>? newImageFiles,
+    List<String>? remainingImageUrls,
+  }) async {
+    final String? uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      debugPrint("Hata: Kullanıcı girişi yapılmamış!");
+      return;
+    }
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      List<String> finalImageUrls = remainingImageUrls ?? [];
+
+      // Eğer yeni görseller seçildiyse yükle ve finale ekle
+      if (newImageFiles != null && newImageFiles.isNotEmpty) {
+        debugPrint("🔥 Yeni fotoğraflar yükleniyor...");
+        List<String> newUrls = await _storageService.uploadMultipleImages(
+          newImageFiles,
+        );
+        finalImageUrls.addAll(newUrls);
+        debugPrint("🔥 Yeni fotoğraflar yüklendi: $newUrls");
+      }
+
+      product.imageUrls = finalImageUrls;
+
+      String? updatedInvoiceUrl;
+      if (finalImageUrls.isNotEmpty) {
+        updatedInvoiceUrl = finalImageUrls.first;
+      }
+
+      Map<String, dynamic> data = product.toMap();
+      data['userId'] = uid;
+      data['invoiceImageUrl'] = updatedInvoiceUrl;
+      data['imageUrls'] = finalImageUrls;
+
+      if (product.id == null || product.id!.isEmpty) {
+        debugPrint("❌ Hata: Güncellenecek ürünün ID'si null veya boş!");
+        throw Exception("Güncellenecek ürünün ID'si bulunamadı.");
+      }
+
+      debugPrint("🔥 Firestore'da güncelleniyor: ${product.id}");
+      await _firestore.collection('products').doc(product.id).update(data);
+      debugPrint("🔥 Ürün başarıyla güncellendi");
+
+      // Bildirimleri de güncellemek için eskileri silip yenileri ekleyebiliriz
+      int notificationId = product.id!.hashCode;
+      try {
+        await _notificationService.cancelNotification(notificationId);
+        await _notificationService.cancelNotification(notificationId + 1);
+      } catch (e) {
+        debugPrint("Bildirim silme hatası (önemsiz): $e");
+      }
+
+      try {
+        final DateTime thirtyDaysBefore = product.expiryDate.subtract(
+          const Duration(days: 30),
+        );
+        if (thirtyDaysBefore.isAfter(DateTime.now())) {
+          await _notificationService.scheduleWarrantyNotification(
+            id: notificationId,
+            title: "Garanti Hatırlatıcısı ⏳",
+            body: "${product.name} ürününün garantisi 1 ay sonra bitiyor!",
+            scheduledDate: thirtyDaysBefore,
+          );
+        }
+
+        final DateTime sevenDaysBefore = product.expiryDate.subtract(
+          const Duration(days: 7),
+        );
+        if (sevenDaysBefore.isAfter(DateTime.now())) {
+          await _notificationService.scheduleWarrantyNotification(
+            id: notificationId + 1,
+            title: "DİKKAT: Garanti Bitiyor! ⚠️",
+            body:
+                "${product.name} ürününün garantisi önümüzdeki hafta doluyor.",
+            scheduledDate: sevenDaysBefore,
+          );
+        }
+      } catch (e) {
+        debugPrint("Bildirim zamanlama hatası (önemsiz): $e");
+      }
+    } catch (e, stackTrace) {
+      debugPrint("❌ Ürün güncelleme hatası: $e\n$stackTrace");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // Ürün Silme

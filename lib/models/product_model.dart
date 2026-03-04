@@ -9,6 +9,7 @@ class ProductModel {
   int warrantyMonths;
   String category;
   String? invoiceImageUrl;
+  List<String>? imageUrls; // Eklenti: Birden fazla resim için
   String? note;
   bool isOnlineStore;
   List<ServiceRecord>? serviceHistory; // Kriter 6 için eklendi
@@ -22,6 +23,7 @@ class ProductModel {
     required this.warrantyMonths,
     required this.category,
     this.invoiceImageUrl,
+    this.imageUrls,
     this.note,
     this.isOnlineStore = false,
     this.serviceHistory,
@@ -45,6 +47,14 @@ class ProductModel {
 
   // Firebase'den Veri Okuma (Model Oluşturma)
   factory ProductModel.fromMap(Map<String, dynamic> map, String documentId) {
+    // Geriye dönük uyumluluk: Hem eski `invoiceImageUrl` hem de yeni `imageUrls` yönetimi
+    List<String> images = [];
+    if (map['imageUrls'] != null) {
+      images = List<String>.from(map['imageUrls']);
+    } else if (map['invoiceImageUrl'] != null) {
+      images.add(map['invoiceImageUrl']);
+    }
+
     return ProductModel(
       id: documentId,
       name: map['name'] ?? '',
@@ -54,13 +64,14 @@ class ProductModel {
       warrantyMonths: map['warrantyMonths'] ?? 24,
       category: map['category'] ?? 'Diğer',
       invoiceImageUrl: map['invoiceImageUrl'],
+      imageUrls: images,
       note: map['note'],
       isOnlineStore: map['isOnlineStore'] ?? false,
       // Servis geçmişi varsa listeye çeviriyoruz
       serviceHistory: map['serviceHistory'] != null
           ? (map['serviceHistory'] as List)
-              .map((item) => ServiceRecord.fromMap(item))
-              .toList()
+                .map((item) => ServiceRecord.fromMap(item))
+                .toList()
           : [],
     );
   }
@@ -75,6 +86,7 @@ class ProductModel {
       'warrantyMonths': warrantyMonths,
       'category': category,
       'invoiceImageUrl': invoiceImageUrl,
+      'imageUrls': imageUrls,
       'note': note,
       'isOnlineStore': isOnlineStore,
       'expiryDate': Timestamp.fromDate(expiryDate), // Sorgular için önemli
