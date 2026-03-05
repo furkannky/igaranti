@@ -257,4 +257,35 @@ class ProductController extends ChangeNotifier {
       debugPrint("Silme hatası: $e");
     }
   }
+
+  // --- Yeni: Yaşam Döngüsü (Servis Kaydı) Ekleme ---
+  Future<void> addServiceRecord(
+    String productId,
+    ServiceRecord record, {
+    File? documentFile,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Eğer kullanıcı servis için bir belge (fatura/fiş) eklediyse onu da Storage'a yükle
+      if (documentFile != null) {
+        String? docUrl = await _storageService.uploadInvoiceImage(documentFile);
+        record.documentUrl = docUrl;
+      }
+
+      // 'serviceHistory' dizisine yeni elemanı atomic olarak ekle
+      await _firestore.collection('products').doc(productId).update({
+        'serviceHistory': FieldValue.arrayUnion([record.toMap()]),
+      });
+
+      debugPrint("✅ Servis kaydı başarıyla eklendi: $productId");
+    } catch (e, stackTrace) {
+      debugPrint("❌ Servis kaydı ekleme hatası: $e\n$stackTrace");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

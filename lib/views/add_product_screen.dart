@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart'; // Kamera erişimi
 import '../controllers/product_controller.dart';
 import '../models/product_model.dart';
 import '../data/popular_brands.dart';
+import '../services/notification_service.dart';
+import '../services/notification_settings_service.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -19,6 +21,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   // Resim Seçimi Değişkenleri
   List<File> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
+  final NotificationService _notificationService = NotificationService();
+  final NotificationSettingsService _settingsService = NotificationSettingsService();
 
   // Form Kontrolleri
   final _nameController = TextEditingController();
@@ -328,18 +332,73 @@ class _AddProductScreenState extends State<AddProductScreen> {
         note: _noteController.text,
       );
 
-      // Controller'a resimleri list olarak gönderiyoruz
-      await Provider.of<ProductController>(
-        context,
-        listen: false,
-      ).addProduct(product, _selectedImages);
+      try {
+        // Controller'a resimleri list olarak gönderiyoruz
+        await Provider.of<ProductController>(
+          context,
+          listen: false,
+        ).addProduct(product, _selectedImages);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Ürün başarıyla eklendi!")),
-        );
-        Navigator.pop(context);
+        // Otomatik bildirim planla
+        await _scheduleProductNotifications(product);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Ürün başarıyla eklendi ve bildirimler planlandı!"),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Hata: $e"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
+    }
+  }
+
+  Future<void> _scheduleProductNotifications(ProductModel product) async {
+    // Bildirimlerin açık olup olmadığını kontrol et
+    final notificationsEnabled = await _settingsService.getNotificationsEnabled();
+    if (!notificationsEnabled) return;
+
+    // İzinleri kontrol et
+    final hasPermission = await _notificationService.arePermissionsGranted();
+    if (!hasPermission) return;
+
+    final daysBeforeExpiry = await _settingsService.getDaysBeforeExpiry();
+
+    // Normal hatırlatma
+    if (product.remainingDays > daysBeforeExpiry) {
+      final normalNotificationDate = product.expiryDate.subtract(Duration(days: daysBeforeExpiry));
+      
+      await _notificationService.scheduleWarrantyNotification(
+        id: product.id.hashCode,
+        title: "Garanti Bitişi Yaklaşıyor",
+        body: "${product.name} ürününün garantisi $daysBeforeExpiry gün içinde bitecek",
+        scheduledDate: normalNotificationDate,
+        payload: product.id,
+      );
+    }
+
+    // Kritik hatırlatma (7 gün kala)
+    if (product.remainingDays > 7) {
+      final criticalNotificationDate = product.expiryDate.subtract(const Duration(days: 7));
+      
+      await _notificationService.scheduleCriticalNotification(
+        id: product.id.hashCode + 100000,
+        title: "Kritik Garanti Uyarısı",
+        body: "${product.name} ürününün garantisi 7 gün içinde bitecek!",
+        scheduledDate: criticalNotificationDate,
+        payload: product.id,
+      );
     }
   }
 }

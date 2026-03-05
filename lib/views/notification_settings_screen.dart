@@ -1,24 +1,49 @@
 import 'package:flutter/material.dart';
 import '../services/notification_service.dart';
-import '../models/product_model.dart';
+import '../services/notification_settings_service.dart';
 import 'package:provider/provider.dart';
 import '../controllers/product_controller.dart';
-import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  State<NotificationSettingsScreen> createState() => _NotificationSettingsScreenState();
+  State<NotificationSettingsScreen> createState() =>
+      _NotificationSettingsScreenState();
 }
 
-class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
+class _NotificationSettingsScreenState
+    extends State<NotificationSettingsScreen> {
   final NotificationService _notificationService = NotificationService();
+  final NotificationSettingsService _settingsService =
+      NotificationSettingsService();
   bool _notificationsEnabled = true;
   int _daysBeforeExpiry = 7;
+  bool _vibrationEnabled = true;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    _notificationsEnabled = await _settingsService.getNotificationsEnabled();
+    _daysBeforeExpiry = await _settingsService.getDaysBeforeExpiry();
+    _vibrationEnabled = await _settingsService.getVibrationEnabled();
+    setState(() {
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -39,19 +64,35 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   children: [
                     const Text(
                       "Bildirimleri Aktif Et",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     Switch(
                       value: _notificationsEnabled,
-                      onChanged: (value) {
+                      onChanged: (value) async {
+                        if (value) {
+                          final hasPermission =
+                              await _checkAndRequestPermissions();
+                          if (!hasPermission) {
+                            _showPermissionDialog();
+                            return;
+                          }
+                        }
+
                         setState(() {
                           _notificationsEnabled = value;
                         });
+                        await _settingsService.setNotificationsEnabled(value);
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(value 
-                              ? "Bildirimler aktif edildi" 
-                              : "Bildirimler devre dışı bırakıldı"),
+                            content: Text(
+                              value
+                                  ? "Bildirimler aktif edildi"
+                                  : "Bildirimler devre dışı bırakıldı",
+                            ),
                           ),
                         );
                       },
@@ -69,7 +110,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   children: [
                     const Text(
                       "Hatırlatma Süresi",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -83,11 +127,87 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                       max: 30,
                       divisions: 29,
                       label: "$_daysBeforeExpiry gün",
-                      onChanged: (value) {
+                      onChanged: (value) async {
                         setState(() {
                           _daysBeforeExpiry = value.round();
                         });
+                        await _settingsService.setDaysBeforeExpiry(
+                          _daysBeforeExpiry,
+                        );
                       },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Titreşim",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Switch(
+                      value: _vibrationEnabled,
+                      onChanged: (value) async {
+                        setState(() {
+                          _vibrationEnabled = value;
+                        });
+                        await _settingsService.setVibrationEnabled(value);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Bildirim Geçmişi",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _showNotificationHistory(),
+                            icon: const Icon(Icons.history),
+                            label: const Text("Geçmişi Gör"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _clearAllNotifications(),
+                            icon: const Icon(Icons.clear_all),
+                            label: const Text("Temizle"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -142,53 +262,170 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   }
 
   void _scheduleTestNotification() async {
-    await _notificationService.scheduleWarrantyNotification(
+    await _notificationService.showInstantNotification(
       id: 999999,
       title: "Test Bildirimi",
       body: "Bu bir test bildirimidir. iGaranti uygulaması çalışıyor!",
-      scheduledDate: DateTime.now().add(const Duration(seconds: 5)),
     );
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Test bildirimi 5 saniye içinde gönderilecek"),
-      ),
-    );
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Test bildirimi gönderildi")));
   }
 
   void _scheduleAllNotifications() async {
     if (!_notificationsEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Önce bildirimleri aktif edin"),
-        ),
+        const SnackBar(content: Text("Önce bildirimleri aktif edin")),
       );
       return;
     }
 
-    final productController = Provider.of<ProductController>(context, listen: false);
-    final products = await productController.getProducts().first;
-    
-    int scheduledCount = 0;
-    
-    for (final product in products) {
-      if (product.remainingDays > 0) {
-        final notificationDate = product.expiryDate.subtract(Duration(days: _daysBeforeExpiry));
-        
-        await _notificationService.scheduleWarrantyNotification(
-          id: product.id.hashCode,
-          title: "Garanti Bitişi Yaklaşıyor",
-          body: "${product.name} ürününün garantisi $_daysBeforeExpiry gün içinde bitecek",
-          scheduledDate: notificationDate,
-        );
-        scheduledCount++;
-      }
+    final hasPermission = await _notificationService.arePermissionsGranted();
+    if (!hasPermission) {
+      _showPermissionDialog();
+      return;
     }
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("$scheduledCount ürün için bildirim planlandı"),
+
+    try {
+      final productController = Provider.of<ProductController>(
+        context,
+        listen: false,
+      );
+      final products = await productController.getProducts().first;
+
+      int scheduledCount = 0;
+      int criticalCount = 0;
+
+      // Önce mevcut bildirimleri temizle
+      await _notificationService.cancelAllNotifications();
+
+      for (final product in products) {
+        if (product.remainingDays > 0) {
+          // Normal hatırlatma
+          final normalNotificationDate = product.expiryDate.subtract(
+            Duration(days: _daysBeforeExpiry),
+          );
+
+          await _notificationService.scheduleWarrantyNotification(
+            id: product.id.hashCode,
+            title: "Garanti Bitişi Yaklaşıyor",
+            body:
+                "${product.name} ürününün garantisi $_daysBeforeExpiry gün içinde bitecek",
+            scheduledDate: normalNotificationDate,
+            payload: product.id,
+          );
+          scheduledCount++;
+
+          // Kritik hatırlatma (7 gün kala)
+          if (product.remainingDays > 7) {
+            final criticalNotificationDate = product.expiryDate.subtract(
+              const Duration(days: 7),
+            );
+
+            await _notificationService.scheduleCriticalNotification(
+              id: product.id.hashCode + 100000,
+              title: "Kritik Garanti Uyarısı",
+              body: "${product.name} ürününün garantisi 7 gün içinde bitecek!",
+              scheduledDate: criticalNotificationDate,
+              payload: product.id,
+            );
+            criticalCount++;
+          }
+        }
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "$scheduledCount normal ve $criticalCount kritik bildirim planlandı",
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Hata: $e"), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<bool> _checkAndRequestPermissions() async {
+    final hasPermission = await _notificationService.arePermissionsGranted();
+    if (!hasPermission) {
+      return await _notificationService.requestPermissions();
+    }
+    return true;
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Bildirim İzni Gerekli"),
+        content: const Text(
+          "Bildirimleri kullanabilmek için lütfen ayarlardan bildirim iznini verin.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("İptal"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _openAppSettings();
+            },
+            child: const Text("Ayarları Aç"),
+          ),
+        ],
       ),
+    );
+  }
+
+  Future<void> _openAppSettings() async {
+    await openAppSettings();
+  }
+
+  void _showNotificationHistory() async {
+    final pendingNotifications = await _notificationService
+        .getPendingNotifications();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Bekleyen Bildirimler"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: pendingNotifications.isEmpty
+              ? const Center(child: Text("Bekleyen bildirim yok"))
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: pendingNotifications.length,
+                  itemBuilder: (context, index) {
+                    final notification = pendingNotifications[index];
+                    return ListTile(
+                      title: Text(notification.title ?? "Başlıksız"),
+                      subtitle: Text(notification.body ?? "İçerik yok"),
+                      trailing: Text("ID: ${notification.id}"),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Kapat"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _clearAllNotifications() async {
+    await _notificationService.cancelAllNotifications();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Tüm bildirimler iptal edildi")),
     );
   }
 }

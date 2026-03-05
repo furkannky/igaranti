@@ -100,11 +100,13 @@ class ServiceRecord {
   DateTime date;
   String description;
   double price;
+  String? documentUrl; // Fiş/Fatura belgesi eklenebilmesi için
 
   ServiceRecord({
     required this.date,
     required this.description,
     required this.price,
+    this.documentUrl,
   });
 
   factory ServiceRecord.fromMap(Map<String, dynamic> map) {
@@ -112,6 +114,7 @@ class ServiceRecord {
       date: (map['date'] as Timestamp).toDate(),
       description: map['description'] ?? '',
       price: (map['price'] ?? 0).toDouble(),
+      documentUrl: map['documentUrl'],
     );
   }
 
@@ -120,6 +123,7 @@ class ServiceRecord {
       'date': Timestamp.fromDate(date),
       'description': description,
       'price': price,
+      'documentUrl': documentUrl,
     };
   }
 }

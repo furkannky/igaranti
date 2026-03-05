@@ -1,9 +1,11 @@
+// ... Diğer importların yanına eklenecek, bu yüzden replace_file_content ile dosyayı yeniden düzenleyeceğiz.
 import 'package:flutter/material.dart';
 import 'package:igaranti/services/pdf_service.dart';
 import 'package:igaranti/services/calendar_service.dart';
 import 'package:intl/intl.dart';
 import '../models/product_model.dart';
 import 'edit_product_screen.dart';
+import 'add_service_record_screen.dart'; // YENİ EKLENDİ
 
 class ProductDetailScreen extends StatelessWidget {
   final ProductModel product;
@@ -91,9 +93,13 @@ class ProductDetailScreen extends StatelessWidget {
                 // Yeni Kayıt Ekleme Butonu
                 TextButton.icon(
                   onPressed: () {
-                    // Not: Bu sayfa henüz oluşturulmadıysa hata verebilir,
-                    // ismini projenize göre güncelleyin.
-                    // Navigator.push(context, MaterialPageRoute(builder: (context) => AddServiceRecordScreen(product: product)));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            AddServiceRecordScreen(product: product),
+                      ),
+                    );
                   },
                   icon: const Icon(Icons.add_moderator, size: 20),
                   label: const Text("Yeni Kayıt"),
@@ -241,12 +247,46 @@ class ProductDetailScreen extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(DateFormat('dd MMMM yyyy').format(record.date)),
-            trailing: Text(
-              "${record.price.toStringAsFixed(2)} TL",
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  "${record.price.toStringAsFixed(2)} TL",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                if (record.documentUrl != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: InkWell(
+                      onTap: () {
+                        // TODO: İleride tam ekran belge görüntüleme (Zoom) yapılacak
+                        debugPrint("Belgeye tıklandı: ${record.documentUrl}");
+                      },
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.attachment,
+                            size: 16,
+                            color: Colors.blueAccent,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            "Belge",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blueAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         );
