@@ -434,11 +434,18 @@ class _EditProductScreenState extends State<EditProductScreen> {
                             controller: _warrantyMonthsController,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                              labelText: 'Ay (Garanti)',
+                              labelText: 'Garanti Süresi (Ay)',
                               border: OutlineInputBorder(),
                             ),
-                            validator: (value) =>
-                                value!.isEmpty ? 'Gerekli' : null,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Gerekli';
+                              }
+                              if (int.tryParse(value) == null) {
+                                return 'Geçerli bir sayı girin';
+                              }
+                              return null;
+                            },
                           ),
                         ),
                       ],

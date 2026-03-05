@@ -122,9 +122,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               controller: textEditingController,
                               focusNode: focusNode,
                               decoration: const InputDecoration(
-                                labelText: "Marka",
+                                labelText: "Marka *",
                                 border: OutlineInputBorder(),
                               ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Marka gerekli';
+                                }
+                                return null;
+                              },
                               onFieldSubmitted: (value) => onFieldSubmitted(),
                             );
                           },
@@ -321,15 +327,26 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   void _saveProduct() async {
     if (_formKey.currentState!.validate()) {
+      // Brand ve model kontrollerini de validate et
+      if (_brandController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Lütfen marka bilgisini girin"),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       final product = ProductModel(
-        name: _nameController.text,
-        brand: _brandController.text,
-        model: _modelController.text,
+        name: _nameController.text.trim(),
+        brand: _brandController.text.trim(),
+        model: _modelController.text.trim(),
         purchaseDate: _selectedDate,
         warrantyMonths: _warrantyMonths,
         category: _selectedCategory,
         isOnlineStore: _isOnline,
-        note: _noteController.text,
+        note: _noteController.text.trim(),
       );
 
       try {
@@ -352,10 +369,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
           Navigator.pop(context);
         }
       } catch (e) {
+        debugPrint("Ürün ekleme hatası: $e");
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Hata: $e"),
+              content: Text("Hata: ${e.toString()}"),
               backgroundColor: Colors.red,
             ),
           );
