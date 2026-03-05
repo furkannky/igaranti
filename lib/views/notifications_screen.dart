@@ -33,7 +33,6 @@ class NotificationsScreen extends StatelessWidget {
           ),
         ],
       ),
-      backgroundColor: Colors.grey[50],
       body: Consumer<ProductController>(
         builder: (context, controller, child) {
           return StreamBuilder<List<ProductModel>>(
@@ -72,12 +71,12 @@ class NotificationsScreen extends StatelessWidget {
                       Icon(
                         Icons.notifications_active_outlined,
                         size: 80,
-                        color: Colors.grey[400],
+                        color: Colors.white24,
                       ),
                       const SizedBox(height: 16),
-                      Text(
+                      const Text(
                         "Şu an için acil bir garanti bildirimi yok.",
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 16, color: Colors.white60),
                       ),
                     ],
                   ),
@@ -146,8 +145,8 @@ class NotificationsScreen extends StatelessWidget {
                             isExpired
                                 ? "Bitiş: ${DateFormat('dd MMM yyyy').format(product.expiryDate)}"
                                 : "Kalan Süre: ${product.remainingDays} gün",
-                            style: TextStyle(
-                              color: Colors.grey[700],
+                            style: const TextStyle(
+                              color: Colors.white70,
                               fontSize: 13,
                             ),
                           ),
@@ -156,7 +155,7 @@ class NotificationsScreen extends StatelessWidget {
                       trailing: const Icon(
                         Icons.arrow_forward_ios,
                         size: 16,
-                        color: Colors.grey,
+                        color: Colors.white54,
                       ),
                       onTap: () {
                         Navigator.push(

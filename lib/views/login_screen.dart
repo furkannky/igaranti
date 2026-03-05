@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:igaranti/views/register_screen.dart';
 import '../services/auth_service.dart';
-import 'dashboard_screen.dart';
+import 'main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,13 +16,23 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
 
   void _handleLogin() async {
-    final user = await _authService.login(_emailController.text, _passwordController.text);
+    final user = await _authService.login(
+      _emailController.text,
+      _passwordController.text,
+    );
     if (user != null) {
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const DashboardScreen()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainScreen()),
+        );
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Giriş başarısız. Bilgileri kontrol edin.")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Giriş başarısız. Bilgileri kontrol edin."),
+        ),
+      );
     }
   }
 
@@ -34,19 +44,32 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.verified_user_outlined, size: 80, color: Colors.blueAccent),
+            const Icon(
+              Icons.verified_user_outlined,
+              size: 80,
+              color: Colors.blueAccent,
+            ),
             const SizedBox(height: 20),
-            const Text("iGaranti'ye Hoş Geldiniz", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const Text(
+              "iGaranti'ye Hoş Geldiniz",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 40),
             TextField(
               controller: _emailController,
-              decoration: const InputDecoration(labelText: "E-posta", border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: "E-posta",
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 15),
             TextField(
               controller: _passwordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: "Şifre", border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: "Şifre",
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 30),
             SizedBox(
@@ -54,17 +77,25 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 50,
               child: ElevatedButton(
                 onPressed: _handleLogin,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                ),
                 child: const Text("GİRİŞ YAP"),
               ),
             ),
             TextButton(
               onPressed: () {
                 // Kayıt olma ekranına yönlendirme eklenebilir
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RegisterScreen(),
+                  ),
+                );
               },
               child: const Text("Hesabınız yok mu? Kayıt olun"),
-            )
+            ),
           ],
         ),
       ),

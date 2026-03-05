@@ -12,7 +12,6 @@ class ProfileScreen extends StatelessWidget {
     final String userEmail = AuthService().currentUser?.email ?? "Kullanıcı";
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text(
           "Profil ve Ayarlar",
@@ -25,11 +24,6 @@ class ProfileScreen extends StatelessWidget {
           children: [
             // Profil Özeti Kartı
             Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-                side: BorderSide(color: Colors.grey[300]!),
-              ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Row(
@@ -50,7 +44,10 @@ class ProfileScreen extends StatelessWidget {
                         children: [
                           const Text(
                             "Merhaba,",
-                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white54,
+                            ),
                           ),
                           Text(
                             userEmail,
@@ -175,18 +172,11 @@ class ProfileScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.black54,
+              color: Colors.white60,
             ),
           ),
         ),
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-            side: BorderSide(color: Colors.grey[300]!),
-          ),
-          child: Column(children: children),
-        ),
+        Card(child: Column(children: children)),
       ],
     );
   }
@@ -212,19 +202,19 @@ class ProfileScreen extends StatelessWidget {
         title,
         style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: titleColor ?? Colors.black87,
+          color: titleColor ?? Colors.white,
         ),
       ),
       subtitle: subtitle != null
           ? Text(
               subtitle,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: const TextStyle(fontSize: 12, color: Colors.white54),
             )
           : null,
       trailing: const Icon(
         Icons.arrow_forward_ios,
         size: 16,
-        color: Colors.grey,
+        color: Colors.white54,
       ),
       onTap: onTap,
     );

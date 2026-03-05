@@ -163,7 +163,6 @@ class _AddServiceRecordScreenState extends State<AddServiceRecordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text(
           "Yeni Servis Kaydı",
@@ -190,7 +189,7 @@ class _AddServiceRecordScreenState extends State<AddServiceRecordScreen> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Colors.white.withValues(alpha: 0.05),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -214,7 +213,7 @@ class _AddServiceRecordScreenState extends State<AddServiceRecordScreen> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Colors.white.withValues(alpha: 0.05),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -238,15 +237,15 @@ class _AddServiceRecordScreenState extends State<AddServiceRecordScreen> {
                           vertical: 16,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey[400]!),
+                          color: Colors.white.withValues(alpha: 0.05),
+                          border: Border.all(color: Colors.white24),
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Row(
                           children: [
                             const Icon(
                               Icons.calendar_today,
-                              color: Colors.grey,
+                              color: Colors.white54,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -275,8 +274,8 @@ class _AddServiceRecordScreenState extends State<AddServiceRecordScreen> {
                       child: Container(
                         height: 150,
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey[400]!),
+                          color: Colors.white.withValues(alpha: 0.05),
+                          border: Border.all(color: Colors.white24),
                           borderRadius: BorderRadius.circular(15),
                           image: _documentFile != null
                               ? DecorationImage(
@@ -292,12 +291,12 @@ class _AddServiceRecordScreenState extends State<AddServiceRecordScreen> {
                                   Icon(
                                     Icons.add_a_photo,
                                     size: 40,
-                                    color: Colors.grey,
+                                    color: Colors.white54,
                                   ),
                                   SizedBox(height: 8),
                                   Text(
                                     'Belge Görseli Ekle',
-                                    style: TextStyle(color: Colors.grey),
+                                    style: TextStyle(color: Colors.white54),
                                   ),
                                 ],
                               )

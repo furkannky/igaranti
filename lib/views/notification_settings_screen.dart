@@ -21,6 +21,7 @@ class _NotificationSettingsScreenState
   bool _notificationsEnabled = true;
   int _daysBeforeExpiry = 7;
   bool _vibrationEnabled = true;
+  String _notificationSound = 'default';
   bool _isLoading = true;
 
   @override
@@ -33,6 +34,7 @@ class _NotificationSettingsScreenState
     _notificationsEnabled = await _settingsService.getNotificationsEnabled();
     _daysBeforeExpiry = await _settingsService.getDaysBeforeExpiry();
     _vibrationEnabled = await _settingsService.getVibrationEnabled();
+    _notificationSound = await _settingsService.getNotificationSound();
     setState(() {
       _isLoading = false;
     });
@@ -118,7 +120,7 @@ class _NotificationSettingsScreenState
                     const SizedBox(height: 8),
                     Text(
                       "Garanti bitişinden $_daysBeforeExpiry gün önce hatırlat",
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: const TextStyle(color: Colors.white54),
                     ),
                     const SizedBox(height: 16),
                     Slider(
@@ -161,6 +163,49 @@ class _NotificationSettingsScreenState
                           _vibrationEnabled = value;
                         });
                         await _settingsService.setVibrationEnabled(value);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Bildirim Sesi",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    DropdownButton<String>(
+                      value: _notificationSound,
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'default',
+                          child: Text("Varsayılan"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'chime',
+                          child: Text("Zil Sesi (Chime)"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'alert',
+                          child: Text("Uyarı Sesi (Alert)"),
+                        ),
+                      ],
+                      onChanged: (String? newValue) async {
+                        if (newValue != null) {
+                          setState(() {
+                            _notificationSound = newValue;
+                          });
+                          await _settingsService.setNotificationSound(newValue);
+                        }
                       },
                     ),
                   ],

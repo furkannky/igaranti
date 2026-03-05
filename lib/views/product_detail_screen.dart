@@ -122,8 +122,8 @@ class ProductDetailScreen extends StatelessWidget {
                 onPressed: () {}, // Marka destek hattı araması için
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: Colors.blueGrey[50],
-                  foregroundColor: Colors.blueGrey[800],
+                  backgroundColor: Colors.white.withValues(alpha: 0.1),
+                  foregroundColor: Colors.white,
                 ),
                 icon: const Icon(Icons.phone_forwarded),
                 label: const Text("Yetkili Servis ile İletişime Geç"),
@@ -151,18 +151,18 @@ class ProductDetailScreen extends StatelessWidget {
         height: 150,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(color: Colors.white24),
         ),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.receipt_long, size: 50, color: Colors.grey),
+            Icon(Icons.receipt_long, size: 50, color: Colors.white54),
             SizedBox(height: 8),
             Text(
               "Fatura veya Görsel Eklenmemiş",
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: Colors.white54),
             ),
           ],
         ),
@@ -186,9 +186,9 @@ class ProductDetailScreen extends StatelessWidget {
               width: 140, // Sabit genişlik
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(color: Colors.white24),
                 image: DecorationImage(
                   image: NetworkImage(imageUrl),
                   fit: BoxFit.cover,
@@ -207,15 +207,18 @@ class ProductDetailScreen extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.grey[50],
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[200]!),
+          border: Border.all(color: Colors.white24),
         ),
         child: const Center(
           child: Text(
             "Henüz bir servis veya bakım kaydı bulunmuyor.",
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+            style: TextStyle(
+              color: Colors.white54,
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ),
       );
@@ -229,14 +232,9 @@ class ProductDetailScreen extends StatelessWidget {
       itemBuilder: (context, index) {
         final record = product.serviceHistory![index];
         return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey[200]!),
-          ),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: Colors.blue[50],
+              backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
               child: const Icon(
                 Icons.build_circle_outlined,
                 color: Colors.blue,
@@ -297,9 +295,6 @@ class ProductDetailScreen extends StatelessWidget {
   // Üst Bilgi Kartı
   Widget _buildInfoCard(Color statusColor) {
     return Card(
-      elevation: 4,
-      shadowColor: Colors.black26,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -314,7 +309,7 @@ class ProductDetailScreen extends StatelessWidget {
                       product.brand,
                       style: const TextStyle(
                         fontSize: 16,
-                        color: Colors.blueGrey,
+                        color: Colors.white70,
                       ),
                     ),
                     Text(
@@ -332,7 +327,7 @@ class ProductDetailScreen extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -372,13 +367,16 @@ class ProductDetailScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 15)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white54, fontSize: 15),
+        ),
         Text(
           value,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 15,
-            color: valueColor ?? Colors.black87,
+            color: valueColor ?? Colors.white,
           ),
         ),
       ],

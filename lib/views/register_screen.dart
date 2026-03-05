@@ -14,11 +14,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final AuthService _authService = AuthService();
 
   void _handleRegister() async {
-    final user = await _authService.register(_emailController.text, _passwordController.text);
+    final user = await _authService.register(
+      _emailController.text,
+      _passwordController.text,
+    );
     if (user != null) {
-      if (mounted) Navigator.pop(context); // Giriş ekranına dön veya Dashboard'a git
+      if (mounted)
+        Navigator.pop(context); // Giriş ekranına dön veya Dashboard'a git
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kayıt başarısız.")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Kayıt başarısız.")));
     }
   }
 
@@ -30,11 +36,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            TextField(controller: _emailController, decoration: const InputDecoration(labelText: "E-posta")),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: "E-posta",
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 15),
-            TextField(controller: _passwordController, obscureText: true, decoration: const InputDecoration(labelText: "Şifre")),
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: "Şifre",
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 30),
-            ElevatedButton(onPressed: _handleRegister, child: const Text("Kayıt Ol")),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _handleRegister,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text("Kayıt Ol"),
+              ),
+            ),
           ],
         ),
       ),
