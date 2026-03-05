@@ -4,8 +4,10 @@ import 'package:igaranti/views/add_product_screen.dart';
 import 'package:provider/provider.dart';
 import '../controllers/product_controller.dart';
 import '../models/product_model.dart';
+import '../services/notification_service.dart';
 import 'package:intl/intl.dart';
 import 'product_detail_screen.dart';
+import 'notification_settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -17,11 +19,35 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   // Arama metnini tutacak değişken
   String searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
+  Stream<List<ProductModel>>? _productsStream; // Stream'i önbelleğe alıyoruz
+  final NotificationService _notificationService = NotificationService();
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationService.init();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Stream sadece bir kere alınır, setState tetiklendiğinde (her tuş basışında)
+    // yeni bir Firestore sorgusu atılması (ve ekranın sıfırlanması) engellenir.
+    _productsStream ??= Provider.of<ProductController>(
+      context,
+      listen: false,
+    ).getProducts();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final productController = Provider.of<ProductController>(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -36,13 +62,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationSettingsScreen(),
+                ),
+              );
+            },
             icon: const Icon(Icons.notifications_none),
           ),
         ],
       ),
       body: StreamBuilder<List<ProductModel>>(
-        stream: productController.getProducts(),
+        stream: _productsStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
@@ -87,25 +120,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   horizontal: 16,
                   vertical: 8,
                 ),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: "Ürün veya marka ara...",
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 16,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: "Ürün veya marka ara...",
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Colors.blueAccent,
+                          ),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear,
+                                    color: Colors.redAccent,
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      searchQuery = "";
+                                    });
+                                    FocusScope.of(context).unfocus();
+                                  },
+                                )
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[200],
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 0,
+                          ),
+                        ),
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (val) {
+                          setState(() {
+                            searchQuery = val.trim();
+                          });
+                        },
+                        onChanged: (val) {
+                          // Her harf girişinde canlı arama yapmak ve
+                          // çarpı ikonunun anlık çıkıp/kaybolmasını sağlamak için:
+                          setState(() {
+                            searchQuery = val.trim();
+                          });
+                        },
+                      ),
                     ),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                  ),
-                  onChanged: (val) {
-                    // Kullanıcı yazdıkça UI güncellenir
-                    setState(() {
-                      searchQuery = val;
-                    });
-                  },
+                  ],
                 ),
               ),
-
               // Ürün Listesi
               Expanded(
                 child: filteredProducts.isEmpty
