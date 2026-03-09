@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:igaranti/views/register_screen.dart';
 import '../services/auth_service.dart';
 import 'main_screen.dart';
 
@@ -11,28 +10,33 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
-  void _handleLogin() async {
-    final user = await _authService.login(
-      _emailController.text,
-      _passwordController.text,
-    );
-    if (user != null) {
-      if (mounted) {
+  void _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final user = await _authService.signInWithGoogle();
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (user != null) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainScreen()),
         );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Google ile giriş başarısız veya iptal edildi."),
+          ),
+        );
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Giriş başarısız. Bilgileri kontrol edin."),
-        ),
-      );
     }
   }
 
@@ -55,47 +59,26 @@ class _LoginScreenState extends State<LoginScreen> {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 40),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: "E-posta",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 15),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: "Şifre",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _handleLogin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text("GİRİŞ YAP"),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                // Kayıt olma ekranına yönlendirme eklenebilir
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RegisterScreen(),
+            if (_isLoading)
+              const CircularProgressIndicator()
+            else
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _handleGoogleSignIn,
+                  icon: const Icon(Icons.login),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black87,
+                    side: const BorderSide(color: Colors.grey, width: 1),
                   ),
-                );
-              },
-              child: const Text("Hesabınız yok mu? Kayıt olun"),
-            ),
+                  label: const Text(
+                    "Google ile Giriş Yap",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

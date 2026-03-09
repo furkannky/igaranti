@@ -12,7 +12,12 @@
           "package_name": "com.example.igaranti"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "465161482930-h0shbhg4p9c1v118qdtkibj33ba1mfth.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCEHzIOUIRhIxR5JzFe60nv1eU7tdh01Fw"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "465161482930-h0shbhg4p9c1v118qdtkibj33ba1mfth.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "465161482930-5jm3l56p225a7k5g9r3tp353lf8hmn0s.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.igaranti"
+              }
+            }
+          ]
         }
       }
     }

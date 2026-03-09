@@ -1,47 +1,95 @@
-// ... Diğer importların yanına eklenecek, bu yüzden replace_file_content ile dosyayı yeniden düzenleyeceğiz.
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:igaranti/services/pdf_service.dart';
 import 'package:igaranti/services/calendar_service.dart';
 import 'package:intl/intl.dart';
 import '../models/product_model.dart';
+import '../controllers/product_controller.dart';
 import 'edit_product_screen.dart';
 import 'add_service_record_screen.dart'; // YENİ EKLENDİ
 
-class ProductDetailScreen extends StatelessWidget {
-  final ProductModel product;
+class ProductDetailScreen extends StatefulWidget {
+  final String productId;
 
-  const ProductDetailScreen({super.key, required this.product});
+  const ProductDetailScreen({super.key, required this.productId});
+
+  @override
+  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+}
+
+class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  ProductModel? product;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProduct();
+  }
+
+  Future<void> _loadProduct() async {
+    final productController = Provider.of<ProductController>(context, listen: false);
+    final products = await productController.getProducts().first;
+    final foundProduct = products.firstWhere((p) => p.id == widget.productId);
+    
+    setState(() {
+      product = foundProduct;
+      isLoading = false;
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Edit ekranından döndüğünde veriyi yenile
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadProduct();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading || product == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Ürün Detayı")),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     // Garanti durumu rengi hesaplama
-    Color statusColor = product.remainingDays < 30
+    Color statusColor = product!.remainingDays < 30
         ? Colors.orange
         : Colors.green;
-    if (product.remainingDays <= 0) statusColor = Colors.red;
+    if (product!.remainingDays <= 0) statusColor = Colors.red;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(product.name),
+        title: Text(product!.name),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditProductScreen(product: product),
+                  builder: (context) => EditProductScreen(product: product!),
                 ),
               );
+              // Edit ekranından döndüğünde veriyi yenile
+              if (result == true && mounted) {
+                _loadProduct();
+              }
             },
           ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
             onPressed: () async {
               final success = await CalendarService.addWarrantyExpiryReminder(
-                productName: product.name,
-                brand: product.brand,
-                expiryDate: product.expiryDate,
+                productName: product!.name,
+                brand: product!.brand,
+                expiryDate: product!.expiryDate,
               );
               if (success) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -59,7 +107,7 @@ class ProductDetailScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            onPressed: () => PdfService.generateProductReport(product),
+            onPressed: () => PdfService.generateProductReport(product!),
             tooltip: "PDF Raporu Oluştur",
           ),
         ],
@@ -97,7 +145,7 @@ class ProductDetailScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            AddServiceRecordScreen(product: product),
+                            AddServiceRecordScreen(product: product!),
                       ),
                     );
                   },
@@ -140,10 +188,10 @@ class ProductDetailScreen extends StatelessWidget {
   Widget _buildInvoiceSection() {
     // Tüm görselleri topla (Eski ve Yeni)
     List<String> allImages = [];
-    if (product.imageUrls != null && product.imageUrls!.isNotEmpty) {
-      allImages.addAll(product.imageUrls!);
-    } else if (product.invoiceImageUrl != null) {
-      allImages.add(product.invoiceImageUrl!);
+    if (product!.imageUrls != null && product!.imageUrls!.isNotEmpty) {
+      allImages.addAll(product!.imageUrls!);
+    } else if (product!.invoiceImageUrl != null) {
+      allImages.add(product!.invoiceImageUrl!);
     }
 
     if (allImages.isEmpty) {
@@ -203,7 +251,7 @@ class ProductDetailScreen extends StatelessWidget {
 
   // Servis Geçmişi Listesi Widget'ı
   Widget _buildServiceHistoryList() {
-    if (product.serviceHistory == null || product.serviceHistory!.isEmpty) {
+    if (product!.serviceHistory == null || product!.serviceHistory!.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -227,10 +275,10 @@ class ProductDetailScreen extends StatelessWidget {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: product.serviceHistory!.length,
+      itemCount: product!.serviceHistory!.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
-        final record = product.serviceHistory![index];
+        final record = product!.serviceHistory![index];
         return Card(
           child: ListTile(
             leading: CircleAvatar(
@@ -306,14 +354,14 @@ class ProductDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      product.brand,
+                      product!.brand,
                       style: const TextStyle(
                         fontSize: 16,
                         color: Colors.white70,
                       ),
                     ),
                     Text(
-                      product.name,
+                      product!.name,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -331,7 +379,7 @@ class ProductDetailScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    product.remainingDays > 0 ? "GARANTİ VAR" : "SÜRESİ DOLDU",
+                    product!.remainingDays > 0 ? "GARANTİ VAR" : "SÜRESİ DOLDU",
                     style: TextStyle(
                       color: statusColor,
                       fontWeight: FontWeight.bold,
@@ -344,17 +392,17 @@ class ProductDetailScreen extends StatelessWidget {
             const Divider(height: 30),
             _infoRow(
               "Satın Alma:",
-              DateFormat('dd/MM/yyyy').format(product.purchaseDate),
+              DateFormat('dd/MM/yyyy').format(product!.purchaseDate),
             ),
             const SizedBox(height: 8),
             _infoRow(
               "Garanti Bitiş:",
-              DateFormat('dd/MM/yyyy').format(product.expiryDate),
+              DateFormat('dd/MM/yyyy').format(product!.expiryDate),
             ),
             const SizedBox(height: 8),
             _infoRow(
               "Kalan Süre:",
-              "${product.remainingDays} Gün",
+              "${product!.remainingDays} Gün",
               valueColor: statusColor,
             ),
           ],

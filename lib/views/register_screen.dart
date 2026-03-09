@@ -9,22 +9,30 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
-  void _handleRegister() async {
-    final user = await _authService.register(
-      _emailController.text,
-      _passwordController.text,
-    );
-    if (user != null) {
-      if (mounted)
+  void _handleGoogleRegister() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final user = await _authService.signInWithGoogle();
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (user != null) {
         Navigator.pop(context); // Giriş ekranına dön veya Dashboard'a git
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Kayıt başarısız.")));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Google ile kayıt başarısız veya iptal edildi."),
+          ),
+        );
+      }
     }
   }
 
@@ -35,36 +43,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: "E-posta",
-                border: OutlineInputBorder(),
-              ),
+            const Icon(
+              Icons.person_add_alt_1_outlined,
+              size: 80,
+              color: Colors.blueAccent,
             ),
-            const SizedBox(height: 15),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: "Şifre",
-                border: OutlineInputBorder(),
-              ),
+            const SizedBox(height: 20),
+            const Text(
+              "Aramıza Katılın",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _handleRegister,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
+            const SizedBox(height: 40),
+            if (_isLoading)
+              const CircularProgressIndicator()
+            else
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _handleGoogleRegister,
+                  icon: const Icon(Icons.login),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black87,
+                    side: const BorderSide(color: Colors.grey, width: 1),
+                  ),
+                  label: const Text(
+                    "Google ile Kayıt Ol / Giriş Yap",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                child: const Text("Kayıt Ol"),
               ),
-            ),
           ],
         ),
       ),

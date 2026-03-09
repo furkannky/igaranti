@@ -197,7 +197,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Ürün başarıyla güncellendi!')),
           );
-          Navigator.pop(context);
+          Navigator.pop(context, true); // Geriye true döndür
         }
       } catch (e) {
         ScaffoldMessenger.of(

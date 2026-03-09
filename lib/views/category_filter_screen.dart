@@ -32,6 +32,17 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
     'Diğer': Colors.grey,
   };
 
+  Stream<List<ProductModel>>? _productsStream;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _productsStream ??= Provider.of<ProductController>(
+      context,
+      listen: false,
+    ).getProducts();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,145 +52,141 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      body: Consumer<ProductController>(
-        builder: (context, productController, child) {
-          return StreamBuilder<List<ProductModel>>(
-            stream: productController.getProducts(),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text(
-                    "Hata: ${snapshot.error}",
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                );
-              }
-              
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+      body: StreamBuilder<List<ProductModel>>(
+        stream: _productsStream,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Hata: ${snapshot.error}",
+                style: const TextStyle(color: Colors.red),
+              ),
+            );
+          }
 
-              final allProducts = snapshot.data ?? [];
-              final categories = _getCategoriesWithCounts(allProducts);
-              
-              List<ProductModel> filteredProducts = allProducts;
-              if (_selectedCategory != null) {
-                filteredProducts = allProducts
-                    .where((p) => p.category == _selectedCategory)
-                    .toList();
-              }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-              // Arama filtresi
-              if (_searchController.text.isNotEmpty) {
-                final searchQuery = _searchController.text.toLowerCase();
-                filteredProducts = filteredProducts.where((p) {
-                  return p.name.toLowerCase().contains(searchQuery) ||
-                      p.brand.toLowerCase().contains(searchQuery);
-                }).toList();
-              }
+          final allProducts = snapshot.data ?? [];
+          final categories = _getCategoriesWithCounts(allProducts);
 
-              return Column(
-                children: [
-                  // Kategori Seçimi
-                  Container(
-                    height: 120,
-                    padding: const EdgeInsets.all(16),
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: categories.keys.length + 1, // +1 for "Tümü"
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          // "Tümü" seçeneği
-                          return _buildCategoryChip(
-                            "Tümü",
-                            allProducts.length,
-                            Icons.apps,
-                            Colors.grey,
-                            _selectedCategory == null,
-                            () {
-                              setState(() {
-                                _selectedCategory = null;
-                              });
+          List<ProductModel> filteredProducts = allProducts;
+          if (_selectedCategory != null) {
+            filteredProducts = allProducts
+                .where((p) => p.category == _selectedCategory)
+                .toList();
+          }
+
+          // Arama filtresi
+          if (_searchController.text.isNotEmpty) {
+            final searchQuery = _searchController.text.toLowerCase();
+            filteredProducts = filteredProducts.where((p) {
+              return p.name.toLowerCase().contains(searchQuery) ||
+                  p.brand.toLowerCase().contains(searchQuery);
+            }).toList();
+          }
+
+          return Column(
+            children: [
+              // Kategori Seçimi
+              Container(
+                height: 120,
+                padding: const EdgeInsets.all(16),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: categories.keys.length + 1, // +1 for "Tümü"
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      // "Tümü" seçeneği
+                      return _buildCategoryChip(
+                        "Tümü",
+                        allProducts.length,
+                        Icons.apps,
+                        Colors.grey,
+                        _selectedCategory == null,
+                        () {
+                          setState(() {
+                            _selectedCategory = null;
+                          });
+                        },
+                      );
+                    }
+
+                    final category = categories.keys.elementAt(index - 1);
+                    final count = categories[category]!;
+                    final icon = _categoryIcons[category] ?? Icons.category;
+                    final color = _categoryColors[category] ?? Colors.grey;
+
+                    return _buildCategoryChip(
+                      category,
+                      count,
+                      icon,
+                      color,
+                      _selectedCategory == category,
+                      () {
+                        setState(() {
+                          _selectedCategory = category;
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+
+              // Arama Çubuğu
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: _selectedCategory != null
+                        ? "$_selectedCategory kategorisinde ara..."
+                        : "Tüm ürünlerde ara...",
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {});
                             },
-                          );
-                        }
-                        
-                        final category = categories.keys.elementAt(index - 1);
-                        final count = categories[category]!;
-                        final icon = _categoryIcons[category] ?? Icons.category;
-                        final color = _categoryColors[category] ?? Colors.grey;
-                        
-                        return _buildCategoryChip(
-                          category,
-                          count,
-                          icon,
-                          color,
-                          _selectedCategory == category,
-                          () {
-                            setState(() {
-                              _selectedCategory = category;
-                            });
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  
-                  // Arama Çubuğu
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: _selectedCategory != null 
-                            ? "$_selectedCategory kategorisinde ara..."
-                            : "Tüm ürünlerde ara...",
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() {});
-                                },
-                              )
-                            : null,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                      ),
-                      onChanged: (value) {
-                        setState(() {});
-                      },
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Filtre Sonuçları
-                  Expanded(
-                    child: filteredProducts.isEmpty
-                        ? Center(
-                            child: Text(
-                              _selectedCategory != null
-                                  ? "$_selectedCategory kategorisinde ürün bulunamadı."
-                                  : "Ürün bulunamadı.",
-                              style: const TextStyle(color: Colors.grey),
-                            ),
                           )
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: filteredProducts.length,
-                            itemBuilder: (context, index) {
-                              return _buildProductCard(filteredProducts[index]);
-                            },
-                          ),
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[100],
                   ),
-                ],
-              );
-            },
+                  onChanged: (value) {
+                    setState(() {});
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Filtre Sonuçları
+              Expanded(
+                child: filteredProducts.isEmpty
+                    ? Center(
+                        child: Text(
+                          _selectedCategory != null
+                              ? "$_selectedCategory kategorisinde ürün bulunamadı."
+                              : "Ürün bulunamadı.",
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filteredProducts.length,
+                        itemBuilder: (context, index) {
+                          return _buildProductCard(filteredProducts[index]);
+                        },
+                      ),
+              ),
+            ],
           );
         },
       ),
@@ -189,7 +196,8 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
   Map<String, int> _getCategoriesWithCounts(List<ProductModel> products) {
     final Map<String, int> categoryCounts = {};
     for (final product in products) {
-      categoryCounts[product.category] = (categoryCounts[product.category] ?? 0) + 1;
+      categoryCounts[product.category] =
+          (categoryCounts[product.category] ?? 0) + 1;
     }
     return categoryCounts;
   }
@@ -220,11 +228,7 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: isSelected ? Colors.white : color,
-                size: 24,
-              ),
+              Icon(icon, color: isSelected ? Colors.white : color, size: 24),
               const SizedBox(height: 4),
               Text(
                 category,
@@ -267,7 +271,7 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ProductDetailScreen(product: product),
+              builder: (context) => ProductDetailScreen(productId: product.id!),
             ),
           );
         },

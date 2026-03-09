@@ -162,7 +162,7 @@ class NotificationsScreen extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
-                                ProductDetailScreen(product: product),
+                                ProductDetailScreen(productId: product.id!),
                           ),
                         );
                       },
