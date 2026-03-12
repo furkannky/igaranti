@@ -200,9 +200,11 @@ class _EditProductScreenState extends State<EditProductScreen> {
           Navigator.pop(context, true); // Geriye true döndür
         }
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Hata oluştu: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Hata oluştu: $e')));
+        }
       } finally {
         setState(() => _isLoading = false);
       }

@@ -28,10 +28,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _loadProduct() async {
-    final productController = Provider.of<ProductController>(context, listen: false);
+    final productController = Provider.of<ProductController>(
+      context,
+      listen: false,
+    );
     final products = await productController.getProducts().first;
     final foundProduct = products.firstWhere((p) => p.id == widget.productId);
-    
+
     setState(() {
       product = foundProduct;
       isLoading = false;
@@ -92,12 +95,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 expiryDate: product!.expiryDate,
               );
               if (success) {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Takvim hatırlatıcısı eklendi!'),
                   ),
                 );
               } else {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Takvim eklenemedi!')),
                 );

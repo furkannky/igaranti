@@ -167,13 +167,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.blueAccent.withOpacity(0.2)
+              ? Colors.blueAccent.withValues(alpha: 0.2)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
-                ? Colors.blueAccent.withOpacity(0.5)
-                : Colors.white.withOpacity(0.1),
+                ? Colors.blueAccent.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.1),
             width: 1,
           ),
         ),
@@ -249,13 +249,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.blueAccent.withOpacity(0.2)
+              ? Colors.blueAccent.withValues(alpha: 0.2)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
-                ? Colors.blueAccent.withOpacity(0.5)
-                : Colors.white.withOpacity(0.1),
+                ? Colors.blueAccent.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.1),
             width: 1,
           ),
         ),
@@ -301,10 +301,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(15),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     width: 1,
                   ),
                 ),
@@ -351,10 +351,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(15),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       width: 1,
                     ),
                   ),
@@ -417,7 +417,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         Container(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             borderRadius: const BorderRadius.only(
                               bottomLeft: Radius.circular(15),
                               bottomRight: Radius.circular(15),
@@ -561,10 +561,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(15),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     width: 1,
                   ),
                 ),
@@ -620,7 +620,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           }
                         },
                         style: TextButton.styleFrom(
-                          backgroundColor: Colors.blueAccent.withOpacity(0.1),
+                          backgroundColor: Colors.blueAccent.withValues(
+                            alpha: 0.1,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -644,10 +646,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(15),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       width: 1,
                     ),
                   ),
@@ -706,7 +708,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         Container(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             borderRadius: const BorderRadius.only(
                               bottomLeft: Radius.circular(15),
                               bottomRight: Radius.circular(15),
@@ -732,10 +734,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.05),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.05,
+                                        ),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                          color: Colors.white.withOpacity(0.1),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.1,
+                                          ),
                                         ),
                                       ),
                                       child: Column(
@@ -858,10 +864,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(15),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       width: 1,
                     ),
                   ),
@@ -920,7 +926,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         Container(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             borderRadius: const BorderRadius.only(
                               bottomLeft: Radius.circular(15),
                               bottomRight: Radius.circular(15),
@@ -1177,13 +1183,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       try {
         // Controller'a resimleri list olarak gönderiyoruz
-        await Provider.of<ProductController>(
+        final success = await Provider.of<ProductController>(
           context,
           listen: false,
-        ).addProduct(product, _selectedImages);
+        ).addProduct(product, _selectedImages, context);
 
         // Başarılı mesajını göster ve navigation'ı yap
-        if (mounted) {
+        if (success) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text("Ürün başarıyla eklendi!"),

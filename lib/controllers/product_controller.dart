@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/product_model.dart';
 import '../services/storage_service.dart';
 import '../services/notification_service.dart';
+import '../services/error_handler_service.dart';
 
 class ProductController extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -16,11 +17,15 @@ class ProductController extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   // Yeni Ürün Ekleme (Kullanıcıya Bağlı)
-  Future<void> addProduct(ProductModel product, List<File>? imageFiles) async {
+  Future<bool> addProduct(
+    ProductModel product,
+    List<File>? imageFiles,
+    BuildContext context,
+  ) async {
     final String? uid = _auth.currentUser?.uid;
     if (uid == null) {
-      debugPrint("Hata: Kullanıcı girişi yapılmamış!");
-      return;
+      ErrorHandlerService.handleError(context, 'Kullanıcı girişi yapılmamış!');
+      return false;
     }
 
     debugPrint("🔥 Ürün ekleniyor - Kullanıcı ID: $uid");
@@ -77,10 +82,15 @@ class ProductController extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint("❌ Ürün ekleme hatası: $e");
+      if (context.mounted) {
+        ErrorHandlerService.handleError(context, e);
+      }
+      return false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+    return true;
   }
 
   // YENİ EKLENDİ: Servis Kaydı Ekleme Fonksiyonu

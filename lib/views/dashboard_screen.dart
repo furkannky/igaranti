@@ -75,11 +75,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "iGaranti Panel",
+                        "🛡️ Garanti Takip Sistemi",
                         style: TextStyle(
-                          color: accentColor,
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
+                          letterSpacing: 1.2,
                         ),
                       ),
                       IconButton(

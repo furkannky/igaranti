@@ -218,10 +218,10 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
           width: 100,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isSelected ? color : color.withOpacity(0.1),
+            color: isSelected ? color : color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected ? color : color.withOpacity(0.3),
+              color: isSelected ? color : color.withValues(alpha: 0.3),
               width: isSelected ? 2 : 1,
             ),
           ),
@@ -245,7 +245,9 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
               Text(
                 "$count",
                 style: TextStyle(
-                  color: isSelected ? Colors.white70 : color.withOpacity(0.7),
+                  color: isSelected
+                      ? Colors.white70
+                      : color.withValues(alpha: 0.7),
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -278,7 +280,7 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
         borderRadius: BorderRadius.circular(15),
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: statusColor.withOpacity(0.2),
+            backgroundColor: statusColor.withValues(alpha: 0.2),
             child: Icon(Icons.inventory_2, color: statusColor),
           ),
           title: Text(

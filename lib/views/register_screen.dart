@@ -49,6 +49,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _isLoading = true;
     });
 
+    final BuildContext currentContext = context;
     final user = await _authService.signUpWithEmail(email, password);
 
     if (mounted) {
@@ -59,18 +60,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (user != null) {
         // Kayıt başarılıysa doğrulama maili gönder ve Email Verification ekranına yönlendir
         await _authService.sendEmailVerification();
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const EmailVerificationScreen(),
-          ),
-        );
+        if (currentContext.mounted) {
+          Navigator.pushReplacement(
+            currentContext,
+            MaterialPageRoute(
+              builder: (context) => const EmailVerificationScreen(),
+            ),
+          );
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Kayıt başarısız. Bilgilerinizi kontrol edin."),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Kayıt başarısız. Bilgilerinizi kontrol edin."),
+            ),
+          );
+        }
       }
     }
   }

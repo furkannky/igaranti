@@ -205,10 +205,10 @@ class _ProductsListScreenState extends State<ProductsListScreen>
         0xFF1E1E36,
       ), // A slightly lighter/vibrant dark blue instead of green
       elevation: 4,
-      shadowColor: Colors.black.withOpacity(0.3),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: statusColor.withOpacity(0.4), width: 1.5),
+        side: BorderSide(color: statusColor.withValues(alpha: 0.4), width: 1.5),
       ),
       child: InkWell(
         onTap: () {
@@ -236,7 +236,7 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.12),
+                        color: Colors.white.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -299,7 +299,7 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -331,10 +331,10 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.15),
+                  color: statusColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: statusColor.withOpacity(0.5),
+                    color: statusColor.withValues(alpha: 0.5),
                     width: 1.5,
                   ),
                 ),

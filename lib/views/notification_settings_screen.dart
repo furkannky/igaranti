@@ -88,6 +88,7 @@ class _NotificationSettingsScreenState
                         });
                         await _settingsService.setNotificationsEnabled(value);
 
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -313,9 +314,11 @@ class _NotificationSettingsScreenState
       body: "Bu bir test bildirimidir. iGaranti uygulaması çalışıyor!",
     );
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Test bildirimi gönderildi")));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Test bildirimi gönderildi")),
+      );
+    }
   }
 
   void _scheduleAllNotifications() async {
@@ -326,18 +329,22 @@ class _NotificationSettingsScreenState
       return;
     }
 
+    final productController = Provider.of<ProductController>(
+      context,
+      listen: false,
+    );
+
     final hasPermission = await _notificationService.arePermissionsGranted();
     if (!hasPermission) {
       _showPermissionDialog();
       return;
     }
 
+    final BuildContext currentContext = context;
     try {
-      final productController = Provider.of<ProductController>(
-        context,
-        listen: false,
-      );
       final products = await productController.getProducts().first;
+
+      if (!currentContext.mounted) return;
 
       int scheduledCount = 0;
       int criticalCount = 0;
@@ -380,18 +387,22 @@ class _NotificationSettingsScreenState
         }
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            "$scheduledCount normal ve $criticalCount kritik bildirim planlandı",
+      if (currentContext.mounted) {
+        ScaffoldMessenger.of(currentContext).showSnackBar(
+          SnackBar(
+            content: Text(
+              "$scheduledCount normal ve $criticalCount kritik bildirim planlandı",
+            ),
+            backgroundColor: Colors.green,
           ),
-          backgroundColor: Colors.green,
-        ),
-      );
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Hata: $e"), backgroundColor: Colors.red),
-      );
+      if (currentContext.mounted) {
+        ScaffoldMessenger.of(currentContext).showSnackBar(
+          SnackBar(content: Text("Hata: $e"), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -433,11 +444,14 @@ class _NotificationSettingsScreenState
   }
 
   void _showNotificationHistory() async {
+    final BuildContext currentContext = context;
     final pendingNotifications = await _notificationService
         .getPendingNotifications();
 
+    if (!currentContext.mounted) return;
+
     showDialog(
-      context: context,
+      context: currentContext,
       builder: (context) => AlertDialog(
         title: const Text("Bekleyen Bildirimler"),
         content: SizedBox(
@@ -469,8 +483,10 @@ class _NotificationSettingsScreenState
 
   void _clearAllNotifications() async {
     await _notificationService.cancelAllNotifications();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Tüm bildirimler iptal edildi")),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Tüm bildirimler iptal edildi")),
+      );
+    }
   }
 }

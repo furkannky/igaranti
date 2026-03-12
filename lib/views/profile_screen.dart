@@ -10,13 +10,14 @@ class ProfileScreen extends StatelessWidget {
     // Current user info (Mocked for now since auth service might not expose details directly,
     // though we can get email from Firebase Auth if needed)
     final String userEmail = AuthService().currentUser?.email ?? "Kullanıcı";
-    
+
     // Extract name from email (take part before @)
     String displayName = "Kullanıcı";
     if (userEmail != "Kullanıcı" && userEmail.contains('@')) {
       displayName = userEmail.split('@')[0];
       // Capitalize first letter
-      displayName = displayName[0].toUpperCase() + displayName.substring(1).toLowerCase();
+      displayName =
+          displayName[0].toUpperCase() + displayName.substring(1).toLowerCase();
     }
 
     return Scaffold(
@@ -88,21 +89,6 @@ class ProfileScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) =>
                             const NotificationSettingsScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const Divider(height: 1),
-                _buildListTile(
-                  icon: Icons.dark_mode,
-                  iconColor: Colors.indigo,
-                  title: "Görünüm (Tema)",
-                  subtitle: "Karanlık ve aydınlık mod (Yakında)",
-                  onTap: () {
-                    // TODO: Karanlık Mod İşlemleri eklenecek
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Karanlık mod yakında eklenecek!'),
                       ),
                     );
                   },

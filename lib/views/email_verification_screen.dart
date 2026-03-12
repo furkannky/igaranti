@@ -78,9 +78,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         setState(() => _canResendEmail = true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Hata: ${e.toString()}")));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Hata: ${e.toString()}")));
+      }
     }
   }
 

@@ -66,7 +66,7 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blueAccent.withOpacity(0.1),
+                      color: Colors.blueAccent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
@@ -199,7 +199,10 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+              colors: [
+                color.withValues(alpha: 0.1),
+                color.withValues(alpha: 0.05),
+              ],
             ),
           ),
           child: Column(
@@ -223,7 +226,7 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
                   vertical: 3,
                 ),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(

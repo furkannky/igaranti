@@ -1,10 +1,64 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Kullanıcı sadece kendi ürünlerini okuyabilir ve yazabilir
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidProductData() {
+      return request.resource.data.keys().hasAll(['name', 'brand', 'purchaseDate', 'warrantyMonths', 'category', 'userId']) &&
+             request.resource.data.name is string &&
+             request.resource.data.name.size() > 1 &&
+             request.resource.data.name.size() <= 100 &&
+             request.resource.data.brand is string &&
+             request.resource.data.brand.size() > 1 &&
+             request.resource.data.brand.size() <= 50 &&
+             request.resource.data.warrantyMonths is int &&
+             request.resource.data.warrantyMonths >= 1 &&
+             request.resource.data.warrantyMonths <= 120 &&
+             request.resource.data.category is string &&
+             request.resource.data.category.size() > 0 &&
+             request.resource.data.userId is string &&
+             request.resource.data.userId == request.auth.uid;
+    }
+    
+    function isValidTimestamp() {
+      return request.time == request.time;
+    }
+    
+    // Products collection rules
     match /products/{productId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // Read: Only owner can read their own products
+      allow read: if isOwner(resource.data.userId);
+      
+      // Create: Only authenticated users can create, with valid data
+      allow create: if isAuthenticated() && 
+                     isOwner(request.resource.data.userId) &&
+                     isValidProductData() &&
+                     isValidTimestamp();
+      
+      // Update: Only owner can update, with valid data
+      allow update: if isOwner(resource.data.userId) &&
+                     isValidProductData() &&
+                     isValidTimestamp();
+      
+      // Delete: Only owner can delete
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // Users collection rules (for user preferences/settings)
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // Deny all other operations
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
