@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_nav_bar/google_nav_bar.dart';
 import 'dashboard_screen.dart';
 import 'add_product_screen.dart';
 import 'products_list_screen.dart';
 import 'profile_screen.dart';
+import '../models/product_filter_type.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -67,80 +69,49 @@ class _MainScreenState extends State<MainScreen> {
         },
         children: _pages,
       ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          color: Colors.transparent,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNavItem(0, Icons.space_dashboard_rounded, 'Panel'),
-              _buildNavItem(1, Icons.inventory_2_rounded, 'Ürünlerim'),
-              _buildNavItem(2, Icons.add_rounded, 'Ekle'),
-              _buildNavItem(3, Icons.person_rounded, 'Profil'),
-            ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: bgColor,
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 20,
+              color: Colors.black.withValues(alpha: .5),
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 12),
+            child: GNav(
+              rippleColor: Colors.grey[800]!,
+              hoverColor: Colors.grey[900]!,
+              gap: 8,
+              activeColor: bgColor,
+              iconSize: 26,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              duration: const Duration(milliseconds: 400),
+              tabBackgroundColor: accentColor,
+              color: Colors.white60,
+              tabs: const [
+                GButton(icon: Icons.dashboard_rounded, text: 'Panel'),
+                GButton(icon: Icons.inventory_2_outlined, text: 'Ürünlerim'),
+                GButton(icon: Icons.add_circle_outline_rounded, text: 'Ekle'),
+                GButton(icon: Icons.person_outline_rounded, text: 'Profil'),
+              ],
+              selectedIndex: _currentIndex,
+              onTabChange: (index) {
+                _pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOutQuint,
+                );
+              },
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    bool isSelected = _currentIndex == index;
-    final Color unselectedBgColor = const Color(0xFF1E1E1E);
-    final Color selectedBgColor = const Color(0xFF1E1E1E);
-    final Color selectedIconBgColor = const Color(0xFF8BFF8B); // Bright green
-    final Color unselectedIconColor = Colors.white54;
-    final Color selectedIconColor = Colors.black;
-
-    return GestureDetector(
-      onTap: () {
-        _pageController.animateToPage(
-          index,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOutQuint,
-        );
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        padding: isSelected
-            ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0)
-            : const EdgeInsets.all(12.0),
-        decoration: BoxDecoration(
-          color: isSelected ? selectedBgColor : unselectedBgColor,
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10.0),
-              decoration: BoxDecoration(
-                color: isSelected ? selectedIconBgColor : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: isSelected ? selectedIconColor : unselectedIconColor,
-                size: 24,
-              ),
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(width: 4),
-            ],
-          ],
-        ),
-      ),
-    );
   }
-}

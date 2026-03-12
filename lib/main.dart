@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:igaranti/views/main_screen.dart';
 import 'package:igaranti/views/login_screen.dart';
 import 'package:igaranti/controllers/product_controller.dart';
+import 'package:igaranti/views/email_verification_screen.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -59,9 +60,14 @@ class IGarantiApp extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
+
             if (snapshot.hasData) {
+              if (!snapshot.data!.emailVerified) {
+                return const EmailVerificationScreen();
+              }
               return const MainScreen();
             }
+
             return const LoginScreen();
           },
         ),

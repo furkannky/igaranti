@@ -204,9 +204,10 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, color: color, size: 40),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
                 category,
                 style: const TextStyle(
@@ -215,11 +216,11 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
-                  vertical: 4,
+                  vertical: 3,
                 ),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.2),

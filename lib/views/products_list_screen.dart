@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/product_controller.dart';
 import '../models/product_model.dart';
+import '../models/product_filter_type.dart';
 import 'package:intl/intl.dart';
 import 'product_detail_screen.dart';
-
-enum ProductFilterType { all, active, expiring, expired }
 
 class ProductsListScreen extends StatefulWidget {
   final ProductFilterType filterType;

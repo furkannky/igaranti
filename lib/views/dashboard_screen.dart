@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/product_controller.dart';
 import '../models/product_model.dart';
+import '../models/product_filter_type.dart';
 import '../services/notification_service.dart';
+
 import 'category_search_screen.dart';
 import 'products_list_screen.dart';
 import 'notifications_screen.dart';

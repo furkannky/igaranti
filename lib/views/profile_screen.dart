@@ -152,9 +152,7 @@ class ProfileScreen extends StatelessWidget {
                     if (confirm == true) {
                       await AuthService().signOut();
                       // SignOut yapıldığında auth wrapper otomatik olarak login ekranına atacaktır.
-                      if (context.mounted) {
-                        Navigator.pop(context); // Profil sayfasını kapat
-                      }
+                      // Navigator.pop() gerek yok, auth state changes yönlendirme yapar
                     }
                   },
                 ),

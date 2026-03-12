@@ -24,7 +24,8 @@ class AuthService {
       }
 
       // 2. Google kimlik doğrulaması ayrıntılarını al
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       // 3. Token kontrolü
       if (googleAuth.idToken == null) {
@@ -57,11 +58,9 @@ class AuthService {
   // Email/Password ile Giriş
   Future<User?> signInWithEmail(String email, String password) async {
     try {
-      final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
+      final UserCredential userCredential = await _auth
+          .signInWithEmailAndPassword(email: email, password: password);
+
       debugPrint("Email ile giriş başarılı: ${userCredential.user?.email}");
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
@@ -77,11 +76,9 @@ class AuthService {
   // Email/Password ile Kayıt
   Future<User?> signUpWithEmail(String email, String password) async {
     try {
-      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
+      final UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password);
+
       debugPrint("Email ile kayıt başarılı: ${userCredential.user?.email}");
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
@@ -104,6 +101,22 @@ class AuthService {
       _handleFirebaseError(e);
     } catch (e) {
       debugPrint("Şifre Sıfırlama Genel Hatası: $e");
+    }
+  }
+
+  // Email Doğrulama Gönder
+  Future<void> sendEmailVerification() async {
+    try {
+      User? user = _auth.currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+        debugPrint("Email doğrulama bağlantısı gönderildi: ${user.email}");
+      }
+    } on FirebaseAuthException catch (e) {
+      debugPrint("Email Doğrulama Hatası: ${e.code} - ${e.message}");
+      _handleFirebaseError(e);
+    } catch (e) {
+      debugPrint("Email Doğrulama Genel Hatası: $e");
     }
   }
 

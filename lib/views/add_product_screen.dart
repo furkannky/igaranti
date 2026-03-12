@@ -1,4 +1,5 @@
 import 'dart:io'; // Dosya işlemleri için
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +9,9 @@ import '../models/product_model.dart';
 import '../data/popular_brands.dart';
 import '../services/notification_service.dart';
 import '../services/notification_settings_service.dart';
+
+// Dosya tipleri için enum
+enum DocumentType { image, pdf }
 
 class AddProductScreen extends StatefulWidget {
   final VoidCallback? onSaveCompleted;
@@ -20,7 +24,7 @@ class AddProductScreen extends StatefulWidget {
 
 class _AddProductScreenState extends State<AddProductScreen> {
   final _formKey = GlobalKey<FormState>();
-  // Resim Seçimi Değişkenleri
+  // Seçilen belgeler (resim + pdf)
   List<File> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
   final NotificationService _notificationService = NotificationService();
@@ -32,7 +36,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _brandController = TextEditingController();
   final _modelController = TextEditingController();
   final _noteController = TextEditingController(); // Not alanı eklendi
-  final _customWarrantyController = TextEditingController(); // Manuel garanti süresi
+  final _customWarrantyController =
+      TextEditingController(); // Manuel garanti süresi
 
   DateTime _selectedDate = DateTime.now();
   int _warrantyMonths = 24;
@@ -50,26 +55,82 @@ class _AddProductScreenState extends State<AddProductScreen> {
     'Diğer',
   ];
 
-  // Kamera/Galeri seçim fonksiyonu
+  // Belge seçim fonksiyonları
   Future<void> _pickImage(ImageSource source) async {
-    if (source == ImageSource.gallery) {
-      final List<XFile> images = await _picker.pickMultiImage(imageQuality: 70);
-      if (images.isNotEmpty) {
-        setState(() {
-          _selectedImages.addAll(images.map((img) => File(img.path)));
-        });
-      }
-    } else {
-      final XFile? image = await _picker.pickImage(
-        source: source,
-        imageQuality: 70,
-      );
-      if (image != null) {
-        setState(() {
-          _selectedImages.add(File(image.path));
-        });
-      }
+    final List<XFile> images = await _picker.pickMultiImage(imageQuality: 70);
+    if (images.isNotEmpty) {
+      setState(() {
+        _selectedImages.addAll(images.map((img) => File(img.path)));
+      });
     }
+  }
+
+  Future<void> _pickPDF() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        allowMultiple: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _selectedImages.addAll(result.files.map((file) => File(file.path!)));
+        });
+      }
+    } catch (e) {
+      debugPrint("PDF seçme hatası: $e");
+    }
+  }
+
+  Future<void> _pickDocuments() async {
+    try {
+      _showDocumentPickerDialog();
+    } catch (e) {
+      debugPrint("Belge seçme hatası: $e");
+    }
+  }
+
+  void _showDocumentPickerDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Belge Seç"),
+        content: const Text("Eklemek istediğiniz belge türünü seçin:"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.gallery);
+            },
+            child: Row(
+              children: const [
+                Icon(Icons.photo_library),
+                SizedBox(width: 8),
+                Text("Galeriden Resim Seç"),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _pickPDF();
+            },
+            child: Row(
+              children: const [
+                Icon(Icons.picture_as_pdf),
+                SizedBox(width: 8),
+                Text("PDF Belgesi Seç"),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("İptal"),
+          ),
+        ],
+      ),
+    );
   }
 
   // Garanti metni yardımcı metod
@@ -80,7 +141,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     if (months == 36) return '3 Yıl';
     if (months == 48) return '4 Yıl';
     if (months == 60) return '5 Yıl';
-    
+
     // Manuel değerler için yıl/ay hesabı
     if (months >= 12 && months % 12 == 0) {
       final years = months ~/ 12;
@@ -92,7 +153,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   // Kategori seçeneği widget'ı
   Widget _buildCategoryOption(String category) {
     final isSelected = _selectedCategory == category;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -105,12 +166,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected 
+          color: isSelected
               ? Colors.blueAccent.withOpacity(0.2)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected 
+            color: isSelected
                 ? Colors.blueAccent.withOpacity(0.5)
                 : Colors.white.withOpacity(0.1),
             width: 1,
@@ -131,18 +192,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   category,
                   style: TextStyle(
                     color: isSelected ? Colors.blueAccent : Colors.white70,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                     fontSize: 14,
                   ),
                 ),
               ],
             ),
             if (isSelected)
-              const Icon(
-                Icons.check_circle,
-                color: Colors.blueAccent,
-                size: 18,
-              )
+              const Icon(Icons.check_circle, color: Colors.blueAccent, size: 18)
             else
               Icon(
                 Icons.radio_button_unchecked,
@@ -158,19 +217,25 @@ class _AddProductScreenState extends State<AddProductScreen> {
   // Kategori ikonu yardımcı metod
   IconData _getCategoryIcon(String category) {
     switch (category) {
-      case 'Elektronik': return Icons.smartphone;
-      case 'Mutfak': return Icons.kitchen;
-      case 'Ev Gereçleri': return Icons.home;
-      case 'Mobilya': return Icons.chair;
-      case 'Diğer': return Icons.more_horiz;
-      default: return Icons.category;
+      case 'Elektronik':
+        return Icons.smartphone;
+      case 'Mutfak':
+        return Icons.kitchen;
+      case 'Ev Gereçleri':
+        return Icons.home;
+      case 'Mobilya':
+        return Icons.chair;
+      case 'Diğer':
+        return Icons.more_horiz;
+      default:
+        return Icons.category;
     }
   }
 
   // Garanti seçeneği widget'ı
   Widget _buildWarrantyOption(int months) {
     final isSelected = _warrantyMonths == months;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -183,12 +248,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected 
+          color: isSelected
               ? Colors.blueAccent.withOpacity(0.2)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected 
+            color: isSelected
                 ? Colors.blueAccent.withOpacity(0.5)
                 : Colors.white.withOpacity(0.1),
             width: 1,
@@ -206,11 +271,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
             ),
             if (isSelected)
-              const Icon(
-                Icons.check_circle,
-                color: Colors.blueAccent,
-                size: 18,
-              )
+              const Icon(Icons.check_circle, color: Colors.blueAccent, size: 18)
             else
               Icon(
                 Icons.radio_button_unchecked,
@@ -272,19 +333,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
-                          validator: (v) => v!.isEmpty ? "Lütfen ürün adını girin" : null,
+                          validator: (v) =>
+                              v!.isEmpty ? "Lütfen ürün adını girin" : null,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 15),
 
               // Marka ve Model - Birleşik Kart
               GestureDetector(
-                onTap: () => setState(() => _isBrandExpanded = !_isBrandExpanded),
+                onTap: () =>
+                    setState(() => _isBrandExpanded = !_isBrandExpanded),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   decoration: BoxDecoration(
@@ -325,8 +388,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                     Text(
                                       "${_brandController.text.isEmpty ? "Marka" : _brandController.text} • ${_modelController.text.isEmpty ? "Model" : _modelController.text}",
                                       style: TextStyle(
-                                        color: (_brandController.text.isEmpty && _modelController.text.isEmpty) 
-                                            ? Colors.white38 
+                                        color:
+                                            (_brandController.text.isEmpty &&
+                                                _modelController.text.isEmpty)
+                                            ? Colors.white38
                                             : Colors.blueAccent,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -337,7 +402,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               ],
                             ),
                             Icon(
-                              _isBrandExpanded 
+                              _isBrandExpanded
                                   ? Icons.keyboard_arrow_up
                                   : Icons.keyboard_arrow_down,
                               color: Colors.white60,
@@ -346,7 +411,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ],
                         ),
                       ),
-                      
+
                       // Açılır İçerik
                       if (_isBrandExpanded)
                         Container(
@@ -362,68 +427,91 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             children: [
                               const Divider(color: Colors.white24),
                               const SizedBox(height: 8),
-                              
+
                               // Marka alanı
                               Autocomplete<String>(
-                                optionsBuilder: (TextEditingValue textEditingValue) {
-                                  if (textEditingValue.text.isEmpty) {
-                                    return const Iterable<String>.empty();
-                                  }
-                                  final brands = PopularBrands.getBrandsForCategory(
-                                    _selectedCategory,
-                                  );
-                                  return brands.where((brand) {
-                                    return brand.toLowerCase().contains(
-                                      textEditingValue.text.toLowerCase(),
-                                    );
-                                  });
-                                },
+                                optionsBuilder:
+                                    (TextEditingValue textEditingValue) {
+                                      if (textEditingValue.text.isEmpty) {
+                                        return const Iterable<String>.empty();
+                                      }
+                                      final brands =
+                                          PopularBrands.getBrandsForCategory(
+                                            _selectedCategory,
+                                          );
+                                      return brands.where((brand) {
+                                        return brand.toLowerCase().contains(
+                                          textEditingValue.text.toLowerCase(),
+                                        );
+                                      });
+                                    },
                                 onSelected: (String selection) {
                                   _brandController.text = selection;
                                   setState(() {});
                                 },
-                                fieldViewBuilder: (
-                                  context,
-                                  textEditingController,
-                                  focusNode,
-                                  onFieldSubmitted,
-                                ) {
-                                  return TextFormField(
-                                    controller: textEditingController,
-                                    focusNode: focusNode,
-                                    decoration: const InputDecoration(
-                                      labelText: "Marka *",
-                                      labelStyle: TextStyle(color: Colors.white70),
-                                      hintText: "Marka girin veya seçin",
-                                      hintStyle: TextStyle(color: Colors.white38),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.all(Radius.circular(8)),
-                                        borderSide: BorderSide(color: Colors.white38),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.all(Radius.circular(8)),
-                                        borderSide: BorderSide(color: Colors.white38),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.all(Radius.circular(8)),
-                                        borderSide: BorderSide(color: Colors.blueAccent),
-                                      ),
-                                    ),
-                                    style: const TextStyle(color: Colors.white),
-                                    validator: (value) {
-                                      if (value == null || value.trim().isEmpty) {
-                                        return 'Marka gerekli';
-                                      }
-                                      return null;
+                                fieldViewBuilder:
+                                    (
+                                      context,
+                                      textEditingController,
+                                      focusNode,
+                                      onFieldSubmitted,
+                                    ) {
+                                      return TextFormField(
+                                        controller: textEditingController,
+                                        focusNode: focusNode,
+                                        decoration: const InputDecoration(
+                                          labelText: "Marka *",
+                                          labelStyle: TextStyle(
+                                            color: Colors.white70,
+                                          ),
+                                          hintText: "Marka girin veya seçin",
+                                          hintStyle: TextStyle(
+                                            color: Colors.white38,
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.all(
+                                              Radius.circular(8),
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.white38,
+                                            ),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.all(
+                                              Radius.circular(8),
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.white38,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.all(
+                                              Radius.circular(8),
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.blueAccent,
+                                            ),
+                                          ),
+                                        ),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                        validator: (value) {
+                                          if (value == null ||
+                                              value.trim().isEmpty) {
+                                            return 'Marka gerekli';
+                                          }
+                                          return null;
+                                        },
+                                        onChanged: (value) => setState(() {}),
+                                        onFieldSubmitted: (value) =>
+                                            onFieldSubmitted(),
+                                      );
                                     },
-                                    onChanged: (value) => setState(() {}),
-                                    onFieldSubmitted: (value) => onFieldSubmitted(),
-                                  );
-                                },
                               ),
-                              
+
                               const SizedBox(height: 12),
-                              
+
                               // Model alanı
                               TextFormField(
                                 controller: _modelController,
@@ -433,16 +521,28 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                   hintText: "Model girin",
                                   hintStyle: TextStyle(color: Colors.white38),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                                    borderSide: BorderSide(color: Colors.white38),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(8),
+                                    ),
+                                    borderSide: BorderSide(
+                                      color: Colors.white38,
+                                    ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                                    borderSide: BorderSide(color: Colors.white38),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(8),
+                                    ),
+                                    borderSide: BorderSide(
+                                      color: Colors.white38,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                                    borderSide: BorderSide(color: Colors.blueAccent),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(8),
+                                    ),
+                                    borderSide: BorderSide(
+                                      color: Colors.blueAccent,
+                                    ),
                                   ),
                                 ),
                                 style: const TextStyle(color: Colors.white),
@@ -456,34 +556,91 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
               ),
 
-              // Satın Alma Tarihi
-              const Text(
-                "Satın Alma Tarihi",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(DateFormat('dd MMMM yyyy').format(_selectedDate)),
-                trailing: const Icon(
-                  Icons.calendar_month,
-                  color: Colors.blueAccent,
+              const SizedBox(height: 15),
+
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.1),
+                    width: 1,
+                  ),
                 ),
-                onTap: () async {
-                  DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: _selectedDate,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime.now(),
-                  );
-                  if (picked != null) setState(() => _selectedDate = picked);
-                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_month,
+                            color: Colors.blueAccent,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Satın Alma Tarihi",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                DateFormat(
+                                  'dd MMMM yyyy',
+                                ).format(_selectedDate),
+                                style: const TextStyle(
+                                  color: Colors.blueAccent,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          DateTime? picked = await showDatePicker(
+                            context: context,
+                            initialDate: _selectedDate,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            setState(() => _selectedDate = picked);
+                          }
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.blueAccent.withOpacity(0.1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          "Tarih Seç",
+                          style: TextStyle(color: Colors.blueAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
 
               const SizedBox(height: 10),
 
               // Garanti Süresi Seçimi - Açılır Kart
               GestureDetector(
-                onTap: () => setState(() => _isWarrantyExpanded = !_isWarrantyExpanded),
+                onTap: () =>
+                    setState(() => _isWarrantyExpanded = !_isWarrantyExpanded),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   decoration: BoxDecoration(
@@ -534,7 +691,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               ],
                             ),
                             Icon(
-                              _isWarrantyExpanded 
+                              _isWarrantyExpanded
                                   ? Icons.keyboard_arrow_up
                                   : Icons.keyboard_arrow_down,
                               color: Colors.white60,
@@ -543,7 +700,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ],
                         ),
                       ),
-                      
+
                       // Açılır Seçenekler
                       if (_isWarrantyExpanded)
                         Container(
@@ -559,17 +716,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             children: [
                               const Divider(color: Colors.white24),
                               const SizedBox(height: 8),
-                              
+
                               // Kaydırılabilir seçenekler
                               SizedBox(
                                 height: 200,
                                 child: ListView(
                                   children: [
                                     // Hazır seçenekler
-                                    ...[6, 12, 24, 36, 48, 60].map((months) => 
-                                      _buildWarrantyOption(months)
+                                    ...[6, 12, 24, 36, 48, 60].map(
+                                      (months) => _buildWarrantyOption(months),
                                     ),
-                                    
+
                                     // Manuel giriş alanı
                                     const SizedBox(height: 12),
                                     Container(
@@ -582,7 +739,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                         ),
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           const Text(
                                             "Manuel Giriş",
@@ -597,8 +755,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                             children: [
                                               Expanded(
                                                 child: TextFormField(
-                                                  controller: _customWarrantyController,
-                                                  keyboardType: TextInputType.number,
+                                                  controller:
+                                                      _customWarrantyController,
+                                                  keyboardType:
+                                                      TextInputType.number,
                                                   decoration: const InputDecoration(
                                                     hintText: "Ay sayısı",
                                                     hintStyle: TextStyle(
@@ -606,31 +766,60 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                                       fontSize: 14,
                                                     ),
                                                     border: OutlineInputBorder(
-                                                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                                                      borderSide: BorderSide(color: Colors.white38),
+                                                      borderRadius:
+                                                          BorderRadius.all(
+                                                            Radius.circular(8),
+                                                          ),
+                                                      borderSide: BorderSide(
+                                                        color: Colors.white38,
+                                                      ),
                                                     ),
-                                                    enabledBorder: OutlineInputBorder(
-                                                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                                                      borderSide: BorderSide(color: Colors.white38),
-                                                    ),
-                                                    focusedBorder: OutlineInputBorder(
-                                                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                                                      borderSide: BorderSide(color: Colors.blueAccent),
-                                                    ),
-                                                    contentPadding: EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 8,
-                                                    ),
+                                                    enabledBorder:
+                                                        OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.all(
+                                                                Radius.circular(
+                                                                  8,
+                                                                ),
+                                                              ),
+                                                          borderSide:
+                                                              BorderSide(
+                                                                color: Colors
+                                                                    .white38,
+                                                              ),
+                                                        ),
+                                                    focusedBorder:
+                                                        OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.all(
+                                                                Radius.circular(
+                                                                  8,
+                                                                ),
+                                                              ),
+                                                          borderSide:
+                                                              BorderSide(
+                                                                color: Colors
+                                                                    .blueAccent,
+                                                              ),
+                                                        ),
+                                                    contentPadding:
+                                                        EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 8,
+                                                        ),
                                                   ),
                                                   style: const TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 14,
                                                   ),
                                                   onChanged: (value) {
-                                                    final customValue = int.tryParse(value);
-                                                    if (customValue != null && customValue > 0) {
+                                                    final customValue =
+                                                        int.tryParse(value);
+                                                    if (customValue != null &&
+                                                        customValue > 0) {
                                                       setState(() {
-                                                        _warrantyMonths = customValue;
+                                                        _warrantyMonths =
+                                                            customValue;
                                                       });
                                                     }
                                                   },
@@ -664,7 +853,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               // Kategori Seçimi - Açılır Kart
               GestureDetector(
-                onTap: () => setState(() => _isCategoryExpanded = !_isCategoryExpanded),
+                onTap: () =>
+                    setState(() => _isCategoryExpanded = !_isCategoryExpanded),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   decoration: BoxDecoration(
@@ -715,7 +905,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               ],
                             ),
                             Icon(
-                              _isCategoryExpanded 
+                              _isCategoryExpanded
                                   ? Icons.keyboard_arrow_up
                                   : Icons.keyboard_arrow_down,
                               color: Colors.white60,
@@ -724,7 +914,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ],
                         ),
                       ),
-                      
+
                       // Açılır Seçenekler
                       if (_isCategoryExpanded)
                         Container(
@@ -740,14 +930,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             children: [
                               const Divider(color: Colors.white24),
                               const SizedBox(height: 8),
-                              
+
                               // Kaydırılabilir kategori seçenekleri
                               SizedBox(
                                 height: 200,
                                 child: ListView(
                                   children: [
-                                    ..._categories.map((category) => 
-                                      _buildCategoryOption(category)
+                                    ..._categories.map(
+                                      (category) =>
+                                          _buildCategoryOption(category),
                                     ),
                                   ],
                                 ),
@@ -768,26 +959,75 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
               const Divider(),
 
-              // Fatura Fotoğrafı Yükleme Alanı (Kriter 2)
-              const Text(
-                "Fatura Fotoğrafı",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => _pickImage(ImageSource.camera),
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text("Kamera"),
+              // Belge Yükleme Alanı
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    width: 1,
                   ),
-                  const SizedBox(width: 10),
-                  OutlinedButton.icon(
-                    onPressed: () => _pickImage(ImageSource.gallery),
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text("Galeri"),
-                  ),
-                ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.upload_file,
+                          color: Colors.blueAccent,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          "Belge Yükle",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "Fatura fotoğrafı veya garanti belgesi ekleyin",
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _pickImage(ImageSource.camera),
+                            icon: const Icon(Icons.camera_alt_outlined),
+                            label: const Text("Kamera"),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.blueAccent,
+                              side: const BorderSide(color: Colors.blueAccent),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _pickDocuments(),
+                            icon: const Icon(Icons.photo_library_outlined),
+                            label: const Text("Galeri & PDF"),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.blueAccent,
+                              side: const BorderSide(color: Colors.blueAccent),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
 
               // Seçilen Fotoğraflar Listesi
@@ -800,18 +1040,50 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       scrollDirection: Axis.horizontal,
                       itemCount: _selectedImages.length,
                       itemBuilder: (context, index) {
+                        final file = _selectedImages[index];
+                        final isPDF = file.path.toLowerCase().endsWith('.pdf');
+                        final isImage = !isPDF;
+
                         return Stack(
                           children: [
                             Padding(
                               padding: const EdgeInsets.only(right: 10),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: Image.file(
-                                  _selectedImages[index],
-                                  height: 120,
-                                  width: 120,
-                                  fit: BoxFit.cover,
-                                ),
+                                child: isPDF
+                                    ? Container(
+                                        width: 120,
+                                        height: 120,
+                                        color: Colors.red.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.picture_as_pdf,
+                                              color: Colors.redAccent,
+                                              size: 40,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            const Text(
+                                              "PDF",
+                                              style: TextStyle(
+                                                color: Colors.redAccent,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    : Image.file(
+                                        file,
+                                        height: 120,
+                                        width: 120,
+                                        fit: BoxFit.cover,
+                                      ),
                               ),
                             ),
                             Positioned(
