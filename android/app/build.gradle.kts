@@ -51,3 +51,7 @@ android {
 flutter {
     source = "../.."
 }
+dependencies {
+    // 2.0.4 olan yeri 2.1.4 (veya daha yenisi olan 2.1.5) yapıyoruz
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+}
