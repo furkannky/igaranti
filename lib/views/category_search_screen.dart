@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../controllers/product_controller.dart';
 import '../models/product_model.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'product_detail_screen.dart';
 
 class CategorySearchScreen extends StatefulWidget {
@@ -56,8 +57,22 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
                 return const Center(child: CircularProgressIndicator());
               }
 
+              final isGuest = FirebaseAuth.instance.currentUser == null;
               final products = snapshot.data ?? [];
-              final categories = _getCategoriesWithCounts(products);
+
+              Map<String, int> categories = _getCategoriesWithCounts(products);
+              int totalProductsCount = products.length;
+
+              // Misafir kullanıcı için mock veriler
+              if (isGuest && products.isEmpty) {
+                categories = {
+                  'Elektronik': 12,
+                  'Mutfak': 5,
+                  'Ev Gereçleri': 3,
+                  'Mobilya': 2,
+                };
+                totalProductsCount = 22;
+              }
 
               return Column(
                 children: [
@@ -83,10 +98,8 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
                         ...categories.entries.map((entry) {
                           return _buildCategoryStat(
                             entry.key,
+                            totalProductsCount,
                             entry.value,
-                            products
-                                .where((p) => p.category == entry.key)
-                                .length,
                           );
                         }).toList(),
                       ],
@@ -108,7 +121,12 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
                       itemBuilder: (context, index) {
                         final category = categories.keys.elementAt(index);
                         final count = categories[category]!;
-                        return _buildCategoryCard(category, count, products);
+                        return _buildCategoryCard(
+                          category,
+                          count,
+                          products,
+                          isGuest,
+                        );
                       },
                     ),
                   ),
@@ -169,6 +187,7 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
     String category,
     int count,
     List<ProductModel> allProducts,
+    bool isGuest,
   ) {
     final icon = _categoryIcons[category] ?? Icons.category;
     final color = _categoryColors[category] ?? Colors.grey;
@@ -181,6 +200,17 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () {
+          if (isGuest) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  "Bu kategoriyi detaylı incelemek için giriş yapmalısınız.",
+                ),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
           Navigator.push(
             context,
             MaterialPageRoute(

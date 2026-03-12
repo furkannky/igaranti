@@ -5,6 +5,8 @@ import '../models/product_model.dart';
 import '../models/product_filter_type.dart';
 import 'package:intl/intl.dart';
 import 'product_detail_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart';
 
 class ProductsListScreen extends StatefulWidget {
   final ProductFilterType filterType;
@@ -63,6 +65,7 @@ class _ProductsListScreenState extends State<ProductsListScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
@@ -162,10 +165,50 @@ class _ProductsListScreenState extends State<ProductsListScreen>
               // Filtre Sonuçları
               Expanded(
                 child: filteredProducts.isEmpty
-                    ? const Center(
-                        child: Text(
-                          "Kayıtlı/aranan ürün bulunamadı.",
-                          style: TextStyle(color: Colors.white54),
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              FirebaseAuth.instance.currentUser == null
+                                  ? Icons.login_rounded
+                                  : Icons.inbox_rounded,
+                              size: 60,
+                              color: Colors.white24,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              FirebaseAuth.instance.currentUser == null
+                                  ? "Ürünlerinizi görmek için giriş yapmalısınız."
+                                  : "Kayıtlı/aranan ürün bulunamadı.",
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 16,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            if (FirebaseAuth.instance.currentUser == null) ...[
+                              const SizedBox(height: 20),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const LoginScreen(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF00D4FF),
+                                  foregroundColor: Colors.black,
+                                ),
+                                child: const Text(
+                                  "Giriş Yap",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       )
                     : ListView.builder(

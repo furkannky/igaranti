@@ -68,7 +68,8 @@ class IGarantiApp extends StatelessWidget {
               return const MainScreen();
             }
 
-            return const LoginScreen();
+            // Giriş yapmamış kullanıcılar için ana ekranı göster
+            return const MainScreen();
           },
         ),
       ),
