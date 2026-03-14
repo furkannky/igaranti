@@ -26,8 +26,9 @@ class AddProductScreen extends StatefulWidget {
 
 class _AddProductScreenState extends State<AddProductScreen> {
   final _formKey = GlobalKey<FormState>();
-  // Seçilen belgeler (resim + pdf)
-  List<File> _selectedImages = [];
+  // Seçilen belgeler
+  List<File> _selectedProductImages = [];
+  File? _selectedInvoiceFile;
   final ImagePicker _picker = ImagePicker();
   final NotificationService _notificationService = NotificationService();
   final NotificationSettingsService _settingsService =
@@ -38,8 +39,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _brandController = TextEditingController();
   final _modelController = TextEditingController();
   final _noteController = TextEditingController(); // Not alanı eklendi
-  final _customWarrantyController =
-      TextEditingController(); // Manuel garanti süresi
+  final _customWarrantyMonthsController =
+      TextEditingController(); // Manuel garanti süresi (Ay)
+  final _customWarrantyYearsController =
+      TextEditingController(); // Manuel garanti süresi (Yıl)
 
   DateTime _selectedDate = DateTime.now();
   int _warrantyMonths = 24;
@@ -57,8 +60,41 @@ class _AddProductScreenState extends State<AddProductScreen> {
     'Diğer',
   ];
 
-  // Belge seçim fonksiyonları
-  Future<void> _pickImage(ImageSource source) async {
+  @override
+  void initState() {
+    super.initState();
+    _customWarrantyMonthsController.addListener(_updateCustomWarranty);
+    _customWarrantyYearsController.addListener(_updateCustomWarranty);
+  }
+
+  void _updateCustomWarranty() {
+    int years = int.tryParse(_customWarrantyYearsController.text) ?? 0;
+    int months = int.tryParse(_customWarrantyMonthsController.text) ?? 0;
+
+    int totalMonths = (years * 12) + months;
+
+    if (totalMonths >= 0) {
+      if (mounted) {
+        setState(() {
+          _warrantyMonths = totalMonths;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _brandController.dispose();
+    _modelController.dispose();
+    _noteController.dispose();
+    _customWarrantyMonthsController.dispose();
+    _customWarrantyYearsController.dispose();
+    super.dispose();
+  }
+
+  // Ürün Fotoğrafı Seçim Fonksiyonları
+  Future<void> _pickProductImage(ImageSource source) async {
     try {
       if (source == ImageSource.gallery) {
         final List<XFile> images = await _picker.pickMultiImage(
@@ -66,7 +102,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         );
         if (images.isNotEmpty) {
           setState(() {
-            _selectedImages.addAll(images.map((img) => File(img.path)));
+            _selectedProductImages.addAll(images.map((img) => File(img.path)));
           });
         }
       } else {
@@ -76,52 +112,61 @@ class _AddProductScreenState extends State<AddProductScreen> {
         );
         if (image != null) {
           setState(() {
-            _selectedImages.add(File(image.path));
+            _selectedProductImages.add(File(image.path));
           });
         }
       }
     } catch (e) {
-      debugPrint("Görsel seçme hatası: $e");
+      debugPrint("Ürün fotoğrafı seçme hatası: $e");
     }
   }
 
-  Future<void> _pickPDF() async {
+  // Garanti Belgesi / Fatura Seçim Fonksiyonları
+  Future<void> _pickInvoiceImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        imageQuality: 70,
+      );
+      if (image != null) {
+        setState(() {
+          _selectedInvoiceFile = File(image.path);
+        });
+      }
+    } catch (e) {
+      debugPrint("Fatura fotoğrafı seçme hatası: $e");
+    }
+  }
+
+  Future<void> _pickInvoicePDF() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
-        allowMultiple: true,
+        allowMultiple: false,
       );
 
       if (result != null && result.files.isNotEmpty) {
         setState(() {
-          _selectedImages.addAll(result.files.map((file) => File(file.path!)));
+          _selectedInvoiceFile = File(result.files.single.path!);
         });
       }
     } catch (e) {
-      debugPrint("PDF seçme hatası: $e");
+      debugPrint("Fatura PDF seçme hatası: $e");
     }
   }
 
-  Future<void> _pickDocuments() async {
-    try {
-      _showDocumentPickerDialog();
-    } catch (e) {
-      debugPrint("Belge seçme hatası: $e");
-    }
-  }
-
-  void _showDocumentPickerDialog() {
+  void _showInvoicePickerDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Belge Seç"),
+        title: const Text("Fatura / Garanti Belgesi Seç"),
         content: const Text("Eklemek istediğiniz belge türünü seçin:"),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _pickImage(ImageSource.camera);
+              _pickInvoiceImage(ImageSource.camera);
             },
             child: Row(
               children: const [
@@ -134,26 +179,26 @@ class _AddProductScreenState extends State<AddProductScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _pickImage(ImageSource.gallery);
+              _pickInvoiceImage(ImageSource.gallery);
             },
             child: Row(
               children: const [
                 Icon(Icons.photo_library),
                 SizedBox(width: 8),
-                Text("Galeriden Resim Seç (Çoklu)"),
+                Text("Galeriden Seç"),
               ],
             ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _pickPDF();
+              _pickInvoicePDF();
             },
             child: Row(
               children: const [
                 Icon(Icons.picture_as_pdf),
                 SizedBox(width: 8),
-                Text("PDF Belgesi Seç"),
+                Text("PDF Olarak Seç"),
               ],
             ),
           ),
@@ -374,6 +419,110 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                   v!.isEmpty ? "Lütfen ürün adını girin" : null,
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  // Kategori Seçimi - Açılır Kart
+                  GestureDetector(
+                    onTap: () => setState(
+                      () => _isCategoryExpanded = !_isCategoryExpanded,
+                    ),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          // Kart Başlığı
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.category,
+                                      color: Colors.blueAccent,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          "Kategori",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        Text(
+                                          _selectedCategory,
+                                          style: TextStyle(
+                                            color: Colors.blueAccent,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                Icon(
+                                  _isCategoryExpanded
+                                      ? Icons.keyboard_arrow_up
+                                      : Icons.keyboard_arrow_down,
+                                  color: Colors.white60,
+                                  size: 24,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Açılır Seçenekler
+                          if (_isCategoryExpanded)
+                            Container(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(15),
+                                  bottomRight: Radius.circular(15),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Divider(color: Colors.white24),
+                                  const SizedBox(height: 8),
+
+                                  // Kaydırılabilir kategori seçenekleri
+                                  SizedBox(
+                                    height: 200,
+                                    child: ListView(
+                                      children: [
+                                        ..._categories.map(
+                                          (category) =>
+                                              _buildCategoryOption(category),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -643,7 +792,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     DateFormat(
-                                      'dd MMMM yyyy',
+                                      'dd.MM.yyyy',
                                     ).format(_selectedDate),
                                     style: const TextStyle(
                                       color: Colors.blueAccent,
@@ -659,6 +808,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             onPressed: () async {
                               DateTime? picked = await showDatePicker(
                                 context: context,
+                                locale: const Locale('tr', 'TR'),
                                 initialDate: _selectedDate,
                                 firstDate: DateTime(2000),
                                 lastDate: DateTime.now(),
@@ -815,11 +965,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                                   Expanded(
                                                     child: TextFormField(
                                                       controller:
-                                                          _customWarrantyController,
+                                                          _customWarrantyYearsController,
                                                       keyboardType:
                                                           TextInputType.number,
                                                       decoration: const InputDecoration(
-                                                        hintText: "Ay sayısı",
+                                                        hintText: "Yıl",
                                                         hintStyle: TextStyle(
                                                           color: Colors.white38,
                                                           fontSize: 14,
@@ -874,136 +1024,87 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                                         color: Colors.white,
                                                         fontSize: 14,
                                                       ),
-                                                      onChanged: (value) {
-                                                        final customValue =
-                                                            int.tryParse(value);
-                                                        if (customValue !=
-                                                                null &&
-                                                            customValue > 0) {
-                                                          setState(() {
-                                                            _warrantyMonths =
-                                                                customValue;
-                                                          });
-                                                        }
-                                                      },
                                                     ),
                                                   ),
                                                   const SizedBox(width: 8),
-                                                  const Text(
-                                                    "ay",
-                                                    style: TextStyle(
-                                                      color: Colors.white70,
-                                                      fontSize: 14,
+                                                  Expanded(
+                                                    child: TextFormField(
+                                                      controller:
+                                                          _customWarrantyMonthsController,
+                                                      keyboardType:
+                                                          TextInputType.number,
+                                                      decoration: const InputDecoration(
+                                                        hintText: "Ay",
+                                                        hintStyle: TextStyle(
+                                                          color: Colors.white38,
+                                                          fontSize: 14,
+                                                        ),
+                                                        border: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.all(
+                                                                Radius.circular(
+                                                                  8,
+                                                                ),
+                                                              ),
+                                                          borderSide:
+                                                              BorderSide(
+                                                                color: Colors
+                                                                    .white38,
+                                                              ),
+                                                        ),
+                                                        enabledBorder:
+                                                            OutlineInputBorder(
+                                                              borderRadius:
+                                                                  BorderRadius.all(
+                                                                    Radius.circular(
+                                                                      8,
+                                                                    ),
+                                                                  ),
+                                                              borderSide:
+                                                                  BorderSide(
+                                                                    color: Colors
+                                                                        .white38,
+                                                                  ),
+                                                            ),
+                                                        focusedBorder: OutlineInputBorder(
+                                                          borderRadius:
+                                                              BorderRadius.all(
+                                                                Radius.circular(
+                                                                  8,
+                                                                ),
+                                                              ),
+                                                          borderSide:
+                                                              BorderSide(
+                                                                color: Colors
+                                                                    .blueAccent,
+                                                              ),
+                                                        ),
+                                                        contentPadding:
+                                                            EdgeInsets.symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 8,
+                                                            ),
+                                                      ),
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 14,
+                                                      ),
                                                     ),
                                                   ),
                                                 ],
                                               ),
+                                              const SizedBox(height: 8),
+                                              if (_warrantyMonths > 0)
+                                                Text(
+                                                  "Toplam: $_warrantyMonths Ay",
+                                                  style: const TextStyle(
+                                                    color: Colors.blueAccent,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
                                             ],
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Kategori Seçimi - Açılır Kart
-                  GestureDetector(
-                    onTap: () => setState(
-                      () => _isCategoryExpanded = !_isCategoryExpanded,
-                    ),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          // Kart Başlığı
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.category,
-                                      color: Colors.blueAccent,
-                                      size: 24,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          "Kategori",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        Text(
-                                          _selectedCategory,
-                                          style: TextStyle(
-                                            color: Colors.blueAccent,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                Icon(
-                                  _isCategoryExpanded
-                                      ? Icons.keyboard_arrow_up
-                                      : Icons.keyboard_arrow_down,
-                                  color: Colors.white60,
-                                  size: 24,
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Açılır Seçenekler
-                          if (_isCategoryExpanded)
-                            Container(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                borderRadius: const BorderRadius.only(
-                                  bottomLeft: Radius.circular(15),
-                                  bottomRight: Radius.circular(15),
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  const Divider(color: Colors.white24),
-                                  const SizedBox(height: 8),
-
-                                  // Kaydırılabilir kategori seçenekleri
-                                  SizedBox(
-                                    height: 200,
-                                    child: ListView(
-                                      children: [
-                                        ..._categories.map(
-                                          (category) =>
-                                              _buildCategoryOption(category),
                                         ),
                                       ],
                                     ),
@@ -1024,141 +1125,118 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
                   const Divider(),
 
-                  // Belge Yükleme Alanı
-                  Container(
-                    padding: const EdgeInsets.all(16),
+                  // Ürün Fotoğrafları Alanı
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(15),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.1),
+                        color: Colors.blueAccent.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.upload_file,
-                              color: Colors.blueAccent,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              "Belge Yükle",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.add_photo_alternate,
+                                color: Colors.blueAccent,
+                                size: 20,
                               ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "Ürün Fotoğrafları Ekle",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            "Ürünün fiziksel durumunu gösteren fotoğraflar",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          "Fatura fotoğrafı veya garanti belgesi ekleyin",
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => _pickImage(ImageSource.camera),
-                                icon: const Icon(Icons.camera_alt_outlined),
-                                label: const Text("Kamera"),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.blueAccent,
-                                  side: const BorderSide(
-                                    color: Colors.blueAccent,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () =>
+                                      _pickProductImage(ImageSource.camera),
+                                  icon: const Icon(Icons.camera_alt_outlined),
+                                  label: const Text("Kamera"),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.blueAccent,
+                                    side: const BorderSide(
+                                      color: Colors.blueAccent,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => _pickDocuments(),
-                                icon: const Icon(Icons.photo_library_outlined),
-                                label: const Text("Galeri & PDF"),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.blueAccent,
-                                  side: const BorderSide(
-                                    color: Colors.blueAccent,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () =>
+                                      _pickProductImage(ImageSource.gallery),
+                                  icon: const Icon(
+                                    Icons.photo_library_outlined,
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
+                                  label: const Text("Galeri"),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.blueAccent,
+                                    side: const BorderSide(
+                                      color: Colors.blueAccent,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 
-                  // Seçilen Fotoğraflar Listesi
-                  if (_selectedImages.isNotEmpty)
+                  // Seçilen Ürün Fotoğrafları Listesi
+                  if (_selectedProductImages.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 15),
                       child: SizedBox(
                         height: 120,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: _selectedImages.length,
+                          itemCount: _selectedProductImages.length,
                           itemBuilder: (context, index) {
-                            final file = _selectedImages[index];
-                            final isPDF = file.path.toLowerCase().endsWith(
-                              '.pdf',
-                            );
-                            final isImage = !isPDF;
-
+                            final file = _selectedProductImages[index];
                             return Stack(
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.only(right: 10),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(10),
-                                    child: isPDF
-                                        ? Container(
-                                            width: 120,
-                                            height: 120,
-                                            color: Colors.red.withValues(
-                                              alpha: 0.1,
-                                            ),
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.picture_as_pdf,
-                                                  color: Colors.redAccent,
-                                                  size: 40,
-                                                ),
-                                                const SizedBox(height: 8),
-                                                const Text(
-                                                  "PDF",
-                                                  style: TextStyle(
-                                                    color: Colors.redAccent,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          )
-                                        : Image.file(
-                                            file,
-                                            height: 120,
-                                            width: 120,
-                                            fit: BoxFit.cover,
-                                          ),
+                                    child: Image.file(
+                                      file,
+                                      height: 120,
+                                      width: 120,
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
                                 ),
                                 Positioned(
@@ -1176,7 +1254,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                       ),
                                       onPressed: () {
                                         setState(() {
-                                          _selectedImages.removeAt(index);
+                                          _selectedProductImages.removeAt(
+                                            index,
+                                          );
                                         });
                                       },
                                     ),
@@ -1188,6 +1268,147 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         ),
                       ),
                     ),
+
+                  const SizedBox(height: 20),
+
+                  // Garanti Belgesi / Fatura Alanı
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: Colors.orangeAccent.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.receipt_long,
+                                color: Colors.orangeAccent,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "Garanti Belgesi / Fatura Ekle",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            "Fatura, garanti belgesi veya fiş fotoğrafı/PDF",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Fatura seçilmişse onu göster, seçilmemişse ekleme butonunu göster
+                          _selectedInvoiceFile != null
+                              ? Stack(
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      height: 150,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: Colors.orangeAccent,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child:
+                                            _selectedInvoiceFile!.path
+                                                .toLowerCase()
+                                                .endsWith('.pdf')
+                                            ? Container(
+                                                color: Colors.red.withValues(
+                                                  alpha: 0.1,
+                                                ),
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: const [
+                                                    Icon(
+                                                      Icons.picture_as_pdf,
+                                                      color: Colors.redAccent,
+                                                      size: 50,
+                                                    ),
+                                                    SizedBox(height: 8),
+                                                    Text(
+                                                      "Fatura/Belge (PDF)",
+                                                      style: TextStyle(
+                                                        color: Colors.redAccent,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              )
+                                            : Image.file(
+                                                _selectedInvoiceFile!,
+                                                fit: BoxFit.cover,
+                                                width: double.infinity,
+                                              ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 8,
+                                      top: 8,
+                                      child: CircleAvatar(
+                                        backgroundColor: Colors.red,
+                                        radius: 18,
+                                        child: IconButton(
+                                          icon: const Icon(
+                                            Icons.close,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                          onPressed: () => setState(
+                                            () => _selectedInvoiceFile = null,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _showInvoicePickerDialog,
+                                    icon: const Icon(Icons.upload_file),
+                                    label: const Text(
+                                      "Belge Seç (Galeri, Kamera veya PDF)",
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.orangeAccent,
+                                      side: const BorderSide(
+                                        color: Colors.orangeAccent,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                   const SizedBox(height: 30),
 
@@ -1256,11 +1477,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
       );
 
       try {
-        // Controller'a resimleri list olarak gönderiyoruz
-        final success = await Provider.of<ProductController>(
-          context,
-          listen: false,
-        ).addProduct(product, _selectedImages, context);
+        final success =
+            await Provider.of<ProductController>(
+              context,
+              listen: false,
+            ).addProduct(
+              product,
+              _selectedProductImages,
+              _selectedInvoiceFile,
+              context,
+            );
 
         // Başarılı mesajını göster ve navigation'ı yap
         if (success) {

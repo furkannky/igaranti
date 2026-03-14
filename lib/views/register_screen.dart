@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'email_verification_screen.dart';
+import '../services/error_handler_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -50,32 +51,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     final BuildContext currentContext = context;
-    final user = await _authService.signUpWithEmail(email, password);
+    try {
+      final user = await _authService.signUpWithEmail(email, password);
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (user != null) {
-        // Kayıt başarılıysa doğrulama maili gönder ve Email Verification ekranına yönlendir
-        await _authService.sendEmailVerification();
-        if (currentContext.mounted) {
-          Navigator.pushReplacement(
-            currentContext,
-            MaterialPageRoute(
-              builder: (context) => const EmailVerificationScreen(),
-            ),
-          );
+      if (mounted) {
+        if (user != null) {
+          // Kayıt başarılıysa doğrulama maili gönder ve Email Verification ekranına yönlendir
+          await _authService.sendEmailVerification();
+          if (currentContext.mounted) {
+            Navigator.pushReplacement(
+              currentContext,
+              MaterialPageRoute(
+                builder: (context) => const EmailVerificationScreen(),
+              ),
+            );
+          }
         }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Kayıt başarısız. Bilgilerinizi kontrol edin."),
-            ),
-          );
-        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorHandlerService.handleError(context, e);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -85,21 +86,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _isLoading = true;
     });
 
-    final user = await _authService.signInWithGoogle();
+    try {
+      final user = await _authService.signInWithGoogle();
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (user != null) {
-        Navigator.pop(context); // Giriş ekranına dön veya Dashboard'a git
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Google ile kayıt başarısız veya iptal edildi."),
-          ),
-        );
+      if (mounted) {
+        if (user != null) {
+          Navigator.pop(context); // Giriş ekranına dön veya Dashboard'a git
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorHandlerService.handleError(context, e);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -23,7 +24,7 @@ class CalendarService {
       
       return await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
-      print('Takvim ekleme hatası: $e');
+      debugPrint('Takvim ekleme hatası: $e');
       return false;
     }
   }

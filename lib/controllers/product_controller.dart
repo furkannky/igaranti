@@ -19,7 +19,8 @@ class ProductController extends ChangeNotifier {
   // Yeni Ürün Ekleme (Kullanıcıya Bağlı)
   Future<bool> addProduct(
     ProductModel product,
-    List<File>? imageFiles,
+    List<File>? productImages,
+    File? invoiceFile,
     BuildContext context,
   ) async {
     final String? uid = _auth.currentUser?.uid;
@@ -35,24 +36,32 @@ class ProductController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      List<String>? imageUrls;
-      if (imageFiles != null && imageFiles.isNotEmpty) {
+      List<String> imageUrls = [];
+      String? invoiceUrl;
+
+      if (productImages != null && productImages.isNotEmpty) {
         debugPrint("🔥 Fotoğraflar yükleniyor...");
-        imageUrls = await _storageService.uploadMultipleImages(imageFiles);
+        imageUrls = await _storageService.uploadMultipleImages(
+          productImages,
+          folderName: 'products',
+        );
         debugPrint("🔥 Fotoğraflar yüklendi: $imageUrls");
+      }
+
+      if (invoiceFile != null) {
+        debugPrint("🔥 Fatura/Belge yükleniyor...");
+        invoiceUrl = await _storageService.uploadImage(
+          invoiceFile,
+          folderName: 'invoices',
+        );
+        debugPrint("🔥 Fatura yüklendi: $invoiceUrl");
       }
 
       Map<String, dynamic> data = product.toMap();
       data['userId'] = uid;
 
-      // Geriye dönük uyumluluk: Eski invoiceImageUrl property'si için ilk görsel atanır
-      if (imageUrls != null && imageUrls.isNotEmpty) {
-        data['invoiceImageUrl'] = imageUrls.first;
-        data['imageUrls'] = imageUrls;
-      } else {
-        data['invoiceImageUrl'] = null;
-        data['imageUrls'] = <String>[];
-      }
+      data['invoiceImageUrl'] = invoiceUrl;
+      data['imageUrls'] = imageUrls;
 
       // Servis geçmişi başlangıçta boş bir liste olarak eklenebilir
       data['serviceHistory'] = [];
@@ -167,8 +176,10 @@ class ProductController extends ChangeNotifier {
   // Ürün Güncelleme (Düzenleme özelliği için yeni eklendi)
   Future<void> updateProduct(
     ProductModel product, {
-    List<File>? newImageFiles,
-    List<String>? remainingImageUrls,
+    List<File>? newProductImages,
+    List<String>? remainingProductImages,
+    File? newInvoiceFile,
+    String? remainingInvoiceUrl,
   }) async {
     final String? uid = _auth.currentUser?.uid;
     if (uid == null) {
@@ -180,28 +191,37 @@ class ProductController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      List<String> finalImageUrls = remainingImageUrls ?? [];
+      List<String> finalImageUrls = remainingProductImages ?? [];
+      String? finalInvoiceUrl = remainingInvoiceUrl;
 
-      // Eğer yeni görseller seçildiyse yükle ve finale ekle
-      if (newImageFiles != null && newImageFiles.isNotEmpty) {
+      // Eğer yeni ürün fotoğrafları seçildiyse yükle ve finale ekle
+      if (newProductImages != null && newProductImages.isNotEmpty) {
         debugPrint("🔥 Yeni fotoğraflar yükleniyor...");
         List<String> newUrls = await _storageService.uploadMultipleImages(
-          newImageFiles,
+          newProductImages,
+          folderName: 'products',
         );
         finalImageUrls.addAll(newUrls);
         debugPrint("🔥 Yeni fotoğraflar yüklendi: $newUrls");
       }
 
-      product.imageUrls = finalImageUrls;
-
-      String? updatedInvoiceUrl;
-      if (finalImageUrls.isNotEmpty) {
-        updatedInvoiceUrl = finalImageUrls.first;
+      // Eğer yeni bir fatura seçildiyse onu yükle ve final invoice url'yi güncelle
+      if (newInvoiceFile != null) {
+        debugPrint("🔥 Yeni fatura yükleniyor...");
+        String? newInvoice = await _storageService.uploadImage(
+          newInvoiceFile,
+          folderName: 'invoices',
+        );
+        finalInvoiceUrl = newInvoice;
+        debugPrint("🔥 Yeni fatura yüklendi: $newInvoice");
       }
+
+      product.imageUrls = finalImageUrls;
+      product.invoiceImageUrl = finalInvoiceUrl;
 
       Map<String, dynamic> data = product.toMap();
       data['userId'] = uid;
-      data['invoiceImageUrl'] = updatedInvoiceUrl;
+      data['invoiceImageUrl'] = finalInvoiceUrl;
       data['imageUrls'] = finalImageUrls;
 
       if (product.id == null || product.id!.isEmpty) {
@@ -280,7 +300,10 @@ class ProductController extends ChangeNotifier {
     try {
       // Eğer kullanıcı servis için bir belge (fatura/fiş) eklediyse onu da Storage'a yükle
       if (documentFile != null) {
-        String? docUrl = await _storageService.uploadInvoiceImage(documentFile);
+        String? docUrl = await _storageService.uploadImage(
+          documentFile,
+          folderName: 'service_documents',
+        );
         record.documentUrl = docUrl;
       }
 

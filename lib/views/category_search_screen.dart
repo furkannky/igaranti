@@ -5,6 +5,7 @@ import '../models/product_model.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'product_detail_screen.dart';
+import 'login_screen.dart';
 
 class CategorySearchScreen extends StatefulWidget {
   const CategorySearchScreen({super.key});
@@ -76,6 +77,34 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
 
               return Column(
                 children: [
+                  // Misafir kullanıcı için bilgilendirme mesajı
+                  if (isGuest)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              "Kategorilerdeki ürünler farazi örneklerdir. Kendi ürünlerinizi ekleyince gerçek ürünleriniz görünecektir.",
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   // Kategori İstatistikleri
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -101,7 +130,7 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
                             totalProductsCount,
                             entry.value,
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ),
@@ -200,23 +229,13 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () {
-          if (isGuest) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  "Bu kategoriyi detaylı incelemek için giriş yapmalısınız.",
-                ),
-                backgroundColor: Colors.orange,
-              ),
-            );
-            return;
-          }
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => CategoryProductsScreen(
                 category: category,
                 products: categoryProducts,
+                isGuest: isGuest,
               ),
             ),
           );
@@ -279,15 +298,42 @@ class _CategorySearchScreenState extends State<CategorySearchScreen> {
 class CategoryProductsScreen extends StatelessWidget {
   final String category;
   final List<ProductModel> products;
+  final bool isGuest;
 
   const CategoryProductsScreen({
     super.key,
     required this.category,
     required this.products,
+    this.isGuest = false,
   });
+
+  List<ProductModel> _getSampleProducts() {
+    return [
+      ProductModel(
+        id: 'sample1',
+        name: '$category Örnek Ürün 1',
+        brand: 'Örnek Marka',
+        model: 'Örnek Model A',
+        category: category,
+        purchaseDate: DateTime.now().subtract(const Duration(days: 365)),
+        warrantyMonths: 24,
+      ),
+      ProductModel(
+        id: 'sample2',
+        name: '$category Örnek Ürün 2',
+        brand: 'Örnek Marka',
+        model: 'Örnek Model B',
+        category: category,
+        purchaseDate: DateTime.now().subtract(const Duration(days: 700)),
+        warrantyMonths: 24,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
+    final displayProducts = isGuest ? _getSampleProducts() : products;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -295,15 +341,67 @@ class CategoryProductsScreen extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      body: products.isEmpty
-          ? const Center(child: Text("Bu kategoride ürün bulunmuyor."))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                return _buildProductCard(context, products[index]);
-              },
+      body: Column(
+        children: [
+          if (isGuest)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              color: Colors.orange.withValues(alpha: 0.2),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.orange, size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Şu anda kategorideki ürünlerin farazi örneklerini görüyorsunuz. Kendi ürünlerinizi ekleyince bu görünümdeki gibi gerçek ürünleriniz görünecektir.",
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+          Expanded(
+            child: displayProducts.isEmpty
+                ? const Center(child: Text("Bu kategoride ürün bulunmuyor."))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: displayProducts.length,
+                    itemBuilder: (context, index) {
+                      return _buildProductCard(context, displayProducts[index]);
+                    },
+                  ),
+          ),
+          if (isGuest)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  "Ürünlerimi Görmek İçin Giriş Yap",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -318,6 +416,36 @@ class CategoryProductsScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: InkWell(
         onTap: () {
+          if (isGuest) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                backgroundColor: const Color(0xFF1A1A2E),
+                title: const Text("Örnek Ürün", style: TextStyle(color: Colors.white)),
+                content: const Text(
+                  "Bu bir farazi örnek üründür. Kendi ürünlerinizi eklediğinizde, burada gördüğünüz gibi gerçek ürünleriniz görünecektir. Detayları görmek ve ürün eklemek için giriş yapmalısınız.",
+                  style: TextStyle(color: Colors.white70),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Kapat", style: TextStyle(color: Colors.white54)),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      );
+                    },
+                    child: const Text("Giriş Yap", style: TextStyle(color: Colors.blueAccent)),
+                  ),
+                ],
+              ),
+            );
+            return;
+          }
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -350,7 +478,7 @@ class CategoryProductsScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                DateFormat('dd/MM/yyyy').format(product.expiryDate),
+                DateFormat('dd.MM.yyyy').format(product.expiryDate),
                 style: const TextStyle(fontSize: 10),
               ),
             ],

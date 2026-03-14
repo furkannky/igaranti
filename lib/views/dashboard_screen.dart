@@ -22,11 +22,17 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final Color bgColor = const Color(0xFF1A1A2E);
-  final Color accentColor = const Color(0xFF00D4FF);
-
   Stream<List<ProductModel>>? _productsStream;
   final NotificationService _notificationService = NotificationService();
+
+  // Tema uyumlu renkler
+  Color get bgColor => Theme.of(context).scaffoldBackgroundColor;
+  Color get accentColor => Theme.of(context).colorScheme.primary;
+  Color get onSurfaceColor => Theme.of(context).colorScheme.onSurface;
+  Color get surfaceColor => Theme.of(context).colorScheme.surface;
+
+  // Crash prevention flag
+  final bool _isNavigating = false;
 
   @override
   void initState() {
@@ -48,22 +54,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final isLoggedIn = user != null;
+  // Misafir kullanıcılar için örnek ürünler
+  List<ProductModel> _getSampleProducts() {
+    return [
+      ProductModel(
+        name: "Örnek Laptop",
+        brand: "Marka",
+        model: "Model X",
+        purchaseDate: DateTime.now().subtract(const Duration(days: 180)),
+        warrantyMonths: 24,
+        category: "Elektronik",
+      ),
+      ProductModel(
+        name: "Örnek Telefon",
+        brand: "Marka",
+        model: "Model Y",
+        purchaseDate: DateTime.now().subtract(const Duration(days: 400)),
+        warrantyMonths: 12,
+        category: "Elektronik",
+      ),
+      ProductModel(
+        name: "Örnek Tablet",
+        brand: "Marka",
+        model: "Model Z",
+        purchaseDate: DateTime.now().subtract(const Duration(days: 30)),
+        warrantyMonths: 12,
+        category: "Elektronik",
+      ),
+    ];
+  }
 
-    return SafeArea(
-      child: Container(
-        color: bgColor,
-        child: _buildMainDashboard(isLoggedIn),
+  void _showGuestAuthPrompt() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          "Oturum Açın",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "Garantilerinizi takip etmek ve detayları görmek için giriş yapın veya kayıt olun.",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Kapat", style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text("Giriş Yap"),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMainDashboard(bool isLoggedIn) {
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isLoggedIn = user != null;
+    final productsStream = isLoggedIn ? (_productsStream ?? Stream.value([])) : Stream.value(_getSampleProducts());
+
+    return SafeArea(
+      child: Container(
+        color: bgColor,
+        child: _buildMainDashboard(productsStream, isLoggedIn),
+      ),
+    );
+  }
+
+  Widget _buildMainDashboard(Stream<List<ProductModel>> productsStream, bool isLoggedIn) {
     return StreamBuilder<List<ProductModel>>(
-      stream: isLoggedIn ? _productsStream : Stream.value([]),
+      stream: productsStream,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(
@@ -189,12 +265,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Icons.inventory_2,
           Colors.blue,
           () {
+            if (isGuest) {
+              _showGuestAuthPrompt();
+              return;
+            }
+            if (_isNavigating) return; // Crash prevention
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => ProductsListScreen(
                   filterType: ProductFilterType.all,
-                  title: "Tüm Ürünler",
+                  title: 'Tüm Ürünler',
                 ),
               ),
             );
@@ -207,18 +288,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Icons.check_circle,
           Colors.green,
           () {
-            if (activeCount == 0) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Aktif garantili ürününüz bulunmamaktadır.'),
-                ),
-              );
+            if (isGuest) {
+              _showGuestAuthPrompt();
               return;
             }
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ProductsListScreen(
+                builder: (context) => const ProductsListScreen(
                   filterType: ProductFilterType.active,
                   title: "Aktif Garantiler",
                 ),
@@ -233,20 +310,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Icons.warning,
           Colors.orange,
           () {
-            if (lowCount == 0) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Yaklaşan bitiş süresi olan ürününüz bulunmamaktadır.',
-                  ),
-                ),
-              );
+            if (isGuest) {
+              _showGuestAuthPrompt();
               return;
             }
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ProductsListScreen(
+                builder: (context) => const ProductsListScreen(
                   filterType: ProductFilterType.expiring,
                   title: "Yaklaşan Bitişler",
                 ),
@@ -261,18 +332,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Icons.error,
           Colors.red,
           () {
-            if (expiredCount == 0) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Garantisi biten ürününüz bulunmamaktadır.'),
-                ),
-              );
+            if (isGuest) {
+              _showGuestAuthPrompt();
               return;
             }
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ProductsListScreen(
+                builder: (context) => const ProductsListScreen(
                   filterType: ProductFilterType.expired,
                   title: "Biten Garantiler",
                 ),
@@ -299,7 +366,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isGuest ? color.withValues(alpha: 0.05) : color.withValues(alpha: 0.1),
+          color: isGuest ? color.withValues(alpha: 0.05) : surfaceColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: color.withValues(alpha: isGuest ? 0.2 : 0.3)),
         ),
@@ -314,7 +381,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Text(
                   value,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: isGuest ? 0.7 : 1.0),
+                    color: onSurfaceColor.withValues(alpha: isGuest ? 0.7 : 1.0),
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -326,7 +393,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               title,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: isGuest ? 0.5 : 0.6),
+                color: onSurfaceColor.withValues(alpha: isGuest ? 0.5 : 0.6),
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -483,24 +550,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 isGuest,
               ),
             ),
-            if (isGuest)
-              SizedBox(
-                width: itemWidth,
-                child: _buildQuickActionItem(
-                  "Profil",
-                  Icons.person_outline,
-                  Colors.grey,
-                  () {
-                    // Misafir profil ekranı veya giriş yönlendirmesi
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Profil özellikleri için giriş yapın"),
-                      ),
-                    );
-                  },
-                  isGuest,
-                ),
-              ),
           ],
         );
       },

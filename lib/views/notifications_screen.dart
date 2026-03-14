@@ -143,7 +143,7 @@ class NotificationsScreen extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             isExpired
-                                ? "Bitiş: ${DateFormat('dd MMM yyyy').format(product.expiryDate)}"
+                                ? "Bitiş: ${DateFormat('dd.MM.yyyy').format(product.expiryDate)}"
                                 : "Kalan Süre: ${product.remainingDays} gün",
                             style: const TextStyle(
                               color: Colors.white70,

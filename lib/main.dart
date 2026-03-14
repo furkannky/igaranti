@@ -1,21 +1,55 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:igaranti/views/main_screen.dart';
-import 'package:igaranti/views/login_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:igaranti/controllers/product_controller.dart';
 import 'package:igaranti/views/email_verification_screen.dart';
+import 'package:igaranti/views/main_screen.dart';
+import 'package:igaranti/theme/app_theme.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Türkçe locale'i başlat
+  await initializeDateFormatting('tr_TR', null);
+  Intl.defaultLocale = 'tr_TR';
+
   runApp(const IGarantiApp());
 }
 
-class IGarantiApp extends StatelessWidget {
+class IGarantiApp extends StatefulWidget {
   const IGarantiApp({super.key});
+
+  @override
+  State<IGarantiApp> createState() => _IGarantiAppState();
+}
+
+class _IGarantiAppState extends State<IGarantiApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // Uygulama arka plandan geri geldiğinde auth state'i yenile
+      FirebaseAuth.instance.currentUser?.reload();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,36 +58,19 @@ class IGarantiApp extends StatelessWidget {
       child: MaterialApp(
         title: 'iGaranti',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData.dark().copyWith(
-          scaffoldBackgroundColor: const Color(0xFF1A1A2E),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF1A1A2E),
-            elevation: 0,
-            iconTheme: IconThemeData(color: Colors.white),
-            titleTextStyle: TextStyle(
-              color: Color(0xFF00D4FF),
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          colorScheme: const ColorScheme.dark(
-            primary: Color(0xFF00D4FF),
-            secondary: Color(0xFF00D4FF),
-            surface: Color(0xFF1A1A2E),
-          ),
-          cardTheme: CardThemeData(
-            color: Colors.white.withValues(alpha: 0.05),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-            ),
-          ),
-          textTheme: ThemeData.dark().textTheme.apply(
-            bodyColor: Colors.white,
-            displayColor: Colors.white,
-          ),
-        ),
+        locale: const Locale('tr', 'TR'),
+        supportedLocales: const [
+          Locale('tr', 'TR'),
+          Locale('en', 'US'),
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: AppTheme.darkTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark, // Sadece koyu mod
         home: StreamBuilder<User?>(
           stream: FirebaseAuth.instance.authStateChanges(),
           builder: (context, snapshot) {
@@ -65,11 +82,11 @@ class IGarantiApp extends StatelessWidget {
               if (!snapshot.data!.emailVerified) {
                 return const EmailVerificationScreen();
               }
-              return const MainScreen();
+              return MainScreen(key: ValueKey(snapshot.data!.uid));
             }
 
-            // Giriş yapmamış kullanıcılar için ana ekranı göster
-            return const MainScreen();
+            // Giriş yapmamış kullanıcılar için misafir modunda ana ekranı göster
+            return const MainScreen(key: ValueKey('guest'));
           },
         ),
       ),

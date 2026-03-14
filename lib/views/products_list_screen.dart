@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/product_controller.dart';
@@ -31,6 +32,9 @@ class _ProductsListScreenState extends State<ProductsListScreen>
   final FocusNode _searchFocusNode = FocusNode();
   Stream<List<ProductModel>>? _productsStream;
 
+  // Crash prevention flag
+  final bool _isNavigating = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -42,6 +46,56 @@ class _ProductsListScreenState extends State<ProductsListScreen>
 
   @override
   bool get wantKeepAlive => true;
+
+  List<ProductModel> _getSampleProducts() {
+    return [
+      ProductModel(
+        id: 'sample1',
+        name: 'iPhone 14 Pro',
+        brand: 'Apple',
+        model: 'A2889',
+        category: 'Elektronik',
+        purchaseDate: DateTime.now().subtract(const Duration(days: 200)),
+        warrantyMonths: 24,
+      ),
+      ProductModel(
+        id: 'sample2',
+        name: 'Samsung Galaxy S23',
+        brand: 'Samsung',
+        model: 'SM-S911B',
+        category: 'Elektronik',
+        purchaseDate: DateTime.now().subtract(const Duration(days: 150)),
+        warrantyMonths: 24,
+      ),
+      ProductModel(
+        id: 'sample3',
+        name: 'Dyson V15',
+        brand: 'Dyson',
+        model: 'V15 Detect',
+        category: 'Ev Gereçleri',
+        purchaseDate: DateTime.now().subtract(const Duration(days: 400)),
+        warrantyMonths: 24,
+      ),
+      ProductModel(
+        id: 'sample4',
+        name: 'MacBook Air M2',
+        brand: 'Apple',
+        model: 'MLY33',
+        category: 'Elektronik',
+        purchaseDate: DateTime.now().subtract(const Duration(days: 100)),
+        warrantyMonths: 12,
+      ),
+      ProductModel(
+        id: 'sample5',
+        name: 'Beko NoFrost',
+        brand: 'Beko',
+        model: 'GN163123X',
+        category: 'Mutfak',
+        purchaseDate: DateTime.now().subtract(const Duration(days: 700)),
+        warrantyMonths: 36,
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -92,6 +146,12 @@ class _ProductsListScreenState extends State<ProductsListScreen>
 
           List<ProductModel> allProducts = snapshot.data ?? [];
           List<ProductModel> filteredProducts = allProducts;
+          final isGuest = FirebaseAuth.instance.currentUser == null;
+
+          // Misafir kullanıcı için örnek veriler
+          if (isGuest && allProducts.isEmpty) {
+            allProducts = _getSampleProducts();
+          }
 
           // Apply base filter
           switch (widget.filterType) {
@@ -125,6 +185,34 @@ class _ProductsListScreenState extends State<ProductsListScreen>
 
           return Column(
             children: [
+              // Misafir kullanıcı için bilgilendirme mesajı
+              if (isGuest)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          "Bu farazi örnek ürünlerdir. Kendi ürünlerinizi ekleyince gerçek ürünleriniz görünecektir.",
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               // Arama Çubuğu
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -138,7 +226,7 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                     prefixIcon: const Icon(Icons.search, color: Colors.white54),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.clear,
                               color: Colors.white54,
                             ),
@@ -165,57 +253,12 @@ class _ProductsListScreenState extends State<ProductsListScreen>
               // Filtre Sonuçları
               Expanded(
                 child: filteredProducts.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              FirebaseAuth.instance.currentUser == null
-                                  ? Icons.login_rounded
-                                  : Icons.inbox_rounded,
-                              size: 60,
-                              color: Colors.white24,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              FirebaseAuth.instance.currentUser == null
-                                  ? "Ürünlerinizi görmek için giriş yapmalısınız."
-                                  : "Kayıtlı/aranan ürün bulunamadı.",
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 16,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            if (FirebaseAuth.instance.currentUser == null) ...[
-                              const SizedBox(height: 20),
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const LoginScreen(),
-                                    ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF00D4FF),
-                                  foregroundColor: Colors.black,
-                                ),
-                                child: const Text(
-                                  "Giriş Yap",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      )
+                    ? _buildEmptyState(context, isGuest: FirebaseAuth.instance.currentUser == null)
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemCount: filteredProducts.length,
                         itemBuilder: (context, index) {
-                          return _buildProductCard(filteredProducts[index]);
+                          return _buildProductCard(filteredProducts[index], isGuest);
                         },
                       ),
               ),
@@ -226,7 +269,7 @@ class _ProductsListScreenState extends State<ProductsListScreen>
     );
   }
 
-  Widget _buildProductCard(ProductModel product) {
+  Widget _buildProductCard(ProductModel product, bool isGuest) {
     Color statusColor;
     String statusText;
 
@@ -255,6 +298,10 @@ class _ProductsListScreenState extends State<ProductsListScreen>
       ),
       child: InkWell(
         onTap: () {
+          if (isGuest) {
+            _showGuestProductDialog(context);
+            return;
+          }
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -283,7 +330,6 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             _getCategoryIcon(product.category),
@@ -294,7 +340,7 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                           Flexible(
                             child: Text(
                               product.category,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -308,7 +354,7 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.delete_outline,
                       color: Colors.white70,
                       size: 22,
@@ -326,7 +372,7 @@ class _ProductsListScreenState extends State<ProductsListScreen>
               // Product Name
               Text(
                 product.name,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
@@ -342,22 +388,22 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.4),
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.calendar_today,
                       size: 16,
-                      color: Colors.white70,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                     const SizedBox(width: 10),
                     Text(
                       "Alış: ${DateFormat('dd.MM.yyyy').format(product.purchaseDate)}",
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -418,6 +464,36 @@ class _ProductsListScreenState extends State<ProductsListScreen>
     return Icons.category;
   }
 
+  void _showGuestProductDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text("Örnek Ürün", style: TextStyle(color: Colors.white)),
+        content: const Text(
+          "Bu bir farazi örnek üründür. Kendi ürünlerinizi eklediğinizde, burada gördüğünüz gibi gerçek ürünleriniz görünecektir. Detayları görmek ve ürün eklemek için giriş yapmalısınız.",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Kapat", style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            },
+            child: const Text("Giriş Yap", style: TextStyle(color: Colors.blueAccent)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showDeleteConfirmation(BuildContext context, ProductModel product) {
     showDialog(
       context: context,
@@ -447,6 +523,171 @@ class _ProductsListScreenState extends State<ProductsListScreen>
             child: const Text('Sil', style: TextStyle(color: Colors.red)),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, {required bool isGuest}) {
+    final bool isSearching = _searchController.text.isNotEmpty;
+    
+    String title = "Kasa Boş";
+    String subtitle = "Henüz hiç ürün eklememişsiniz. İlk ürününüzü ekleyerek takibe başlayın!";
+    IconData icon = Icons.inventory_2_rounded;
+
+    if (isGuest) {
+      title = "Oturum Açın";
+      subtitle = "Ürünlerinizi ve garanti sürelerinizi takip etmek için giriş yapmalısınız.";
+      icon = Icons.lock_outline_rounded;
+    } else if (isSearching) {
+      title = "Sonuç Bulunamadı";
+      subtitle = "Aradığınız kriterlere uygun ürün bulunamadı. Lütfen aramayı düzenleyin.";
+      icon = Icons.search_off_rounded;
+    } else {
+      // Filter specific empty states
+      switch (widget.filterType) {
+        case ProductFilterType.active:
+          title = "Aktif Garanti Yok";
+          subtitle = "Şu anda garanti süresi devam eden bir ürününüz bulunmuyor.";
+          icon = Icons.check_circle_outline_rounded;
+          break;
+        case ProductFilterType.expiring:
+          title = "Yaklaşan Bitiş Yok";
+          subtitle = "Önümüzdeki 30 gün içinde garantisi bitecek bir ürününüz bulunmuyor. Her şey yolunda!";
+          icon = Icons.notifications_none_rounded;
+          break;
+        case ProductFilterType.expired:
+          title = "Biten Garanti Yok";
+          subtitle = "Garantisi dolmuş herhangi bir ürününüz bulunmamaktadır.";
+          icon = Icons.history_rounded;
+          break;
+        case ProductFilterType.all:
+          title = "Kasa Boş";
+          subtitle = "Henüz hiç ürün eklememişsiniz. İlk ürününüzü ekleyerek takibe başlayın!";
+          icon = Icons.inventory_2_rounded;
+          break;
+      }
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00D4FF).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 60,
+                      color: const Color(0xFF00D4FF),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  if (isGuest)
+                    ElevatedButton(
+                      onPressed: () {
+                        if (_isNavigating) return;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00D4FF),
+                        foregroundColor: Colors.black,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Giriş Yap",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  else if (isSearching)
+                    OutlinedButton(
+                      onPressed: () {
+                        _searchController.clear();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF00D4FF),
+                        side: const BorderSide(color: Color(0xFF00D4FF)),
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: const Text(
+                        "Aramayı Temizle",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  else
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        // Notify the user or use a scaffold messenger for now
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Yeni ürün eklemek için '+' butonuna tıklayın."),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text("Ürün Ekle"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00D4FF),
+                        foregroundColor: Colors.black,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
@@ -6,11 +7,17 @@ class StorageService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final _uuid = const Uuid();
 
-  // Fotoğrafı Firebase Storage'a yükler ve URL'sini döndürür
-  Future<String?> uploadInvoiceImage(File imageFile) async {
+  // Tek bir fotoğrafı Firebase Storage'a yükler ve URL'sini döndürür
+  Future<String?> uploadImage(
+    File imageFile, {
+    String folderName = 'invoices',
+  }) async {
     try {
       // Benzersiz bir dosya adı oluştur (Örn: invoices/unique_id.jpg)
-      String fileName = 'invoices/${_uuid.v4()}.jpg';
+      String extension = imageFile.path.toLowerCase().endsWith('.pdf')
+          ? '.pdf'
+          : '.jpg';
+      String fileName = '$folderName/${_uuid.v4()}$extension';
 
       // Storage referansı oluştur
       Reference ref = _storage.ref().child(fileName);
@@ -24,17 +31,20 @@ class StorageService {
 
       return downloadUrl;
     } catch (e) {
-      print("Fotoğraf yükleme hatası: $e");
+      debugPrint("Dosya yükleme hatası: $e");
       return null;
     }
   }
 
   // Birden fazla fotoğraf yükler ve URL listesini döndürür
-  Future<List<String>> uploadMultipleImages(List<File> imageFiles) async {
+  Future<List<String>> uploadMultipleImages(
+    List<File> imageFiles, {
+    String folderName = 'invoices',
+  }) async {
     List<String> downloadUrls = [];
 
     for (File file in imageFiles) {
-      String? url = await uploadInvoiceImage(file);
+      String? url = await uploadImage(file, folderName: folderName);
       if (url != null) {
         downloadUrls.add(url);
       }

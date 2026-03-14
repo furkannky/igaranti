@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 class PdfService {
   static Future<void> generateProductReport(ProductModel product) async {
     final pdf = pw.Document();
-    final dateFmt = DateFormat('dd/MM/yyyy');
+    final dateFmt = DateFormat('dd.MM.yyyy');
 
     pdf.addPage(
       pw.Page(

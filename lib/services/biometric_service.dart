@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
@@ -9,7 +10,7 @@ class BiometricService {
       final bool isSupported = await _auth.isDeviceSupported();
       return isSupported;
     } catch (e) {
-      print('Biyometrik destek kontrolü hatası: $e');
+      debugPrint('Biyometrik destek kontrolü hatası: $e');
       return false;
     }
   }
@@ -23,10 +24,10 @@ class BiometricService {
       );
       return didAuthenticate;
     } on PlatformException catch (e) {
-      print('Biyometrik doğrulama hatası: ${e.code} - ${e.message}');
+      debugPrint('Biyometrik doğrulama hatası: ${e.code} - ${e.message}');
       return false;
     } catch (e) {
-      print('Biyometrik doğrulama hatası: $e');
+      debugPrint('Biyometrik doğrulama hatası: $e');
       return false;
     }
   }
@@ -36,7 +37,7 @@ class BiometricService {
       final List<BiometricType> availableBiometrics = await _auth.getAvailableBiometrics();
       return availableBiometrics;
     } catch (e) {
-      print('Biyometrik türleri kontrolü hatası: $e');
+      debugPrint('Biyometrik türleri kontrolü hatası: $e');
       return [];
     }
   }
@@ -46,7 +47,7 @@ class BiometricService {
       final bool canCheck = await _auth.canCheckBiometrics;
       return canCheck;
     } catch (e) {
-      print('Biyometrik kontrol hatası: $e');
+      debugPrint('Biyometrik kontrol hatası: $e');
       return false;
     }
   }

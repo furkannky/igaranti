@@ -161,6 +161,11 @@ class ProfileScreen extends StatelessWidget {
 
                       if (confirm == true) {
                         await AuthService().signOut();
+                        if (context.mounted) {
+                          // main.dart'taki ValueKey sayesinde MainScreen zaten Panel'e sıfırlanacak,
+                          // ama biz Navigator stack'ini temizleyerek en başa (ana ekrana) dönmeyi garantiliyoruz.
+                          Navigator.of(context).popUntil((route) => route.isFirst);
+                        }
                       }
                     },
                   ),
@@ -202,7 +207,8 @@ class ProfileScreen extends StatelessWidget {
     required String title,
     String? subtitle,
     Color? titleColor,
-    required VoidCallback onTap,
+    Widget? trailing,
+    VoidCallback? onTap,
   }) {
     return ListTile(
       leading: Container(
@@ -226,11 +232,7 @@ class ProfileScreen extends StatelessWidget {
               style: const TextStyle(fontSize: 12, color: Colors.white54),
             )
           : null,
-      trailing: const Icon(
-        Icons.arrow_forward_ios,
-        size: 16,
-        color: Colors.white54,
-      ),
+      trailing: trailing,
       onTap: onTap,
     );
   }

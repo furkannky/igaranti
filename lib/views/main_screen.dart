@@ -22,6 +22,16 @@ class _MainScreenState extends State<MainScreen> {
   final PageController _pageController = PageController(initialPage: 0);
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
@@ -113,5 +123,4 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
-
-  }
+}

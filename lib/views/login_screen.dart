@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'main_screen.dart';
 import 'register_screen.dart';
 import 'email_verification_screen.dart';
+import '../services/error_handler_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,41 +37,40 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    final user = await _authService.signInWithEmail(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-    );
+    try {
+      final user = await _authService.signInWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (user != null) {
-        if (!user.emailVerified) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Lütfen önce email adresinizi doğrulayın."),
-            ),
-          );
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const EmailVerificationScreen(),
-            ),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainScreen()),
-          );
+      if (mounted) {
+        if (user != null) {
+          if (!user.emailVerified) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Lütfen önce email adresinizi doğrulayın."),
+              ),
+            );
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const EmailVerificationScreen(),
+              ),
+            );
+          } else {
+            Navigator.pop(context);
+          }
         }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Giriş başarısız. Bilgilerinizi kontrol edin."),
-          ),
-        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorHandlerService.handleError(context, e);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -81,38 +80,37 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    final user = await _authService.signInWithGoogle();
+    try {
+      final user = await _authService.signInWithGoogle();
 
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (user != null) {
-        if (!user.emailVerified) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Lütfen önce email adresinizi doğrulayın."),
-            ),
-          );
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const EmailVerificationScreen(),
-            ),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainScreen()),
-          );
+      if (mounted) {
+        if (user != null) {
+          if (!user.emailVerified) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Lütfen önce email adresinizi doğrulayın."),
+              ),
+            );
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const EmailVerificationScreen(),
+              ),
+            );
+          } else {
+            Navigator.pop(context);
+          }
         }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Google ile giriş başarısız veya iptal edildi."),
-          ),
-        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorHandlerService.handleError(context, e);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -127,12 +125,19 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    await _authService.resetPassword(_emailController.text.trim());
+    try {
+      await _authService.resetPassword(_emailController.text.trim());
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Şifre sıfırlama bağlantısı gönderildi.")),
-      );
+      if (mounted) {
+        ErrorHandlerService.showSuccessMessage(
+          context,
+          "Şifre sıfırlama bağlantısı gönderildi.",
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorHandlerService.handleError(context, e);
+      }
     }
   }
 

@@ -302,7 +302,7 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
                 ),
               ),
               Text(
-                DateFormat('dd/MM/yyyy').format(product.expiryDate),
+                DateFormat('dd.MM.yyyy').format(product.expiryDate),
                 style: const TextStyle(fontSize: 10),
               ),
             ],

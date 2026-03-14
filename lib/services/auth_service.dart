@@ -51,7 +51,7 @@ class AuthService {
       return null;
     } catch (e) {
       debugPrint("Google SignIn Genel Hatası: $e");
-      return null;
+      rethrow;
     }
   }
 
@@ -69,7 +69,7 @@ class AuthService {
       return null;
     } catch (e) {
       debugPrint("Email SignIn Genel Hatası: $e");
-      return null;
+      rethrow;
     }
   }
 
@@ -87,7 +87,7 @@ class AuthService {
       return null;
     } catch (e) {
       debugPrint("Email SignUp Genel Hatası: $e");
-      return null;
+      rethrow;
     }
   }
 
@@ -101,6 +101,7 @@ class AuthService {
       _handleFirebaseError(e);
     } catch (e) {
       debugPrint("Şifre Sıfırlama Genel Hatası: $e");
+      rethrow;
     }
   }
 

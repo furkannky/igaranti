@@ -250,7 +250,7 @@ class _AddServiceRecordScreenState extends State<AddServiceRecordScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                "İşlem Tarihi: ${DateFormat('dd/MM/yyyy').format(_selectedDate)}",
+                                "İşlem Tarihi: ${DateFormat('dd.MM.yyyy').format(_selectedDate)}",
                                 style: const TextStyle(fontSize: 16),
                               ),
                             ),

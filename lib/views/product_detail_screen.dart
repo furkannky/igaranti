@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:igaranti/services/pdf_service.dart';
 import 'package:igaranti/services/calendar_service.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +8,7 @@ import '../models/product_model.dart';
 import '../controllers/product_controller.dart';
 import 'edit_product_screen.dart';
 import 'add_service_record_screen.dart'; // YENİ EKLENDİ
+import 'login_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -41,19 +43,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Edit ekranından döndüğünde veriyi yenile
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _loadProduct();
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
+    final isGuest = FirebaseAuth.instance.currentUser == null;
+    
+    if (isGuest) {
+      return _buildGuestView();
+    }
+    
     if (isLoading || product == null) {
       return Scaffold(
         appBar: AppBar(title: const Text("Ürün Detayı")),
@@ -126,7 +124,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             _buildInfoCard(statusColor),
             const SizedBox(height: 25),
 
-            // 2. Fatura Görseli Bölümü
+            // 2. Ürün Fotoğrafları
+            if (product!.imageUrls != null &&
+                product!.imageUrls!.isNotEmpty) ...[
+              const Text(
+                "Ürün Fotoğrafları",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              _buildProductPhotosSection(),
+              const SizedBox(height: 25),
+            ],
+
+            // 3. Fatura ve Belgeler Bölümü
             const Text(
               "Fatura ve Belgeler",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -189,17 +199,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  // Ürün Fotoğrafları Bölümü Widget'ı
+  Widget _buildProductPhotosSection() {
+    final List<String> images = product!.imageUrls!;
+
+    return SizedBox(
+      height: 140,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: images.length,
+        itemBuilder: (context, index) {
+          final imageUrl = images[index];
+          return GestureDetector(
+            onTap: () => _showFullScreenImage(context, imageUrl, 'product_image_$imageUrl'),
+            child: Hero(
+              tag: 'product_image_$imageUrl',
+              child: Container(
+                width: 140, // Sabit genişlik
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: Colors.white24),
+                  image: DecorationImage(
+                    image: NetworkImage(imageUrl),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   // Fatura / Görsel Bölümü Widget'ı
   Widget _buildInvoiceSection() {
-    // Tüm görselleri topla (Eski ve Yeni)
-    List<String> allImages = [];
-    if (product!.imageUrls != null && product!.imageUrls!.isNotEmpty) {
-      allImages.addAll(product!.imageUrls!);
-    } else if (product!.invoiceImageUrl != null) {
-      allImages.add(product!.invoiceImageUrl!);
-    }
-
-    if (allImages.isEmpty) {
+    if (product!.invoiceImageUrl == null || product!.invoiceImageUrl!.isEmpty) {
       return Container(
         height: 150,
         width: double.infinity,
@@ -214,7 +251,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             Icon(Icons.receipt_long, size: 50, color: Colors.white54),
             SizedBox(height: 8),
             Text(
-              "Fatura veya Görsel Eklenmemiş",
+              "Fatura veya Belge Eklenmemiş",
               style: TextStyle(color: Colors.white54),
             ),
           ],
@@ -222,34 +259,91 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
     }
 
-    // Birden fazla fotoğraf varsa yatay scroll edilebilir liste göster
-    return SizedBox(
-      height: 180,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: allImages.length,
-        itemBuilder: (context, index) {
-          final imageUrl = allImages[index];
-          return GestureDetector(
-            onTap: () {
-              // Görseli tam ekran açma işlevi eklenebilir
-              debugPrint("Resme tıklandı: $imageUrl");
-            },
-            child: Container(
-              width: 140, // Sabit genişlik
-              margin: const EdgeInsets.only(right: 12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: Colors.white24),
-                image: DecorationImage(
-                  image: NetworkImage(imageUrl),
-                  fit: BoxFit.cover,
-                ),
+    final imageUrl = product!.invoiceImageUrl!;
+    final isPdf = imageUrl.contains('.pdf?alt=media');
+
+    return GestureDetector(
+      onTap: () {
+        if (!isPdf) {
+          _showFullScreenImage(context, imageUrl, 'invoice_$imageUrl');
+        } else {
+          // PDF ise indirme veya tarayıcıda açma işlemi yapılabilir.
+          // Şimdilik PDF raporu oluşturma metoduyla aynı servisi çağırabiliriz
+          // veya tarayıcıya yönlendirebiliriz.
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'PDF görüntüleme desteklenmiyor. Lütfen tarayıcıdan açın.',
               ),
             ),
           );
-        },
+        }
+      },
+      child: Hero(
+        tag: 'invoice_$imageUrl',
+        child: Container(
+          height: 180,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Colors.white24),
+            image: !isPdf
+                ? DecorationImage(
+                    image: NetworkImage(imageUrl),
+                    fit: BoxFit.cover,
+                  )
+                : null,
+          ),
+          child: isPdf
+              ? const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.picture_as_pdf,
+                      color: Colors.redAccent,
+                      size: 50,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      "PDF Belgesini Gör",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+
+  void _showFullScreenImage(BuildContext context, String imageUrl, String heroTag) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+          extendBodyBehindAppBar: true,
+          body: InteractiveViewer(
+            panEnabled: true,
+            minScale: 0.5,
+            maxScale: 4.0,
+            child: Center(
+              child: Hero(
+                tag: heroTag,
+                child: Image.network(imageUrl, fit: BoxFit.contain),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -297,7 +391,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               record.description,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            subtitle: Text(DateFormat('dd MMMM yyyy').format(record.date)),
+            subtitle: Text(DateFormat('dd.MM.yyyy').format(record.date)),
             trailing: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -397,12 +491,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             const Divider(height: 30),
             _infoRow(
               "Satın Alma:",
-              DateFormat('dd/MM/yyyy').format(product!.purchaseDate),
+              DateFormat('dd.MM.yyyy').format(product!.purchaseDate),
             ),
             const SizedBox(height: 8),
             _infoRow(
               "Garanti Bitiş:",
-              DateFormat('dd/MM/yyyy').format(product!.expiryDate),
+              DateFormat('dd.MM.yyyy').format(product!.expiryDate),
             ),
             const SizedBox(height: 8),
             _infoRow(
@@ -433,6 +527,78 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildGuestView() {
+    return Scaffold(
+      backgroundColor: const Color(0xFF1A1A2E),
+      appBar: AppBar(
+        title: const Text("Örnek Ürün Detayı"),
+        backgroundColor: const Color(0xFF1A1A2E),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_outline,
+                  size: 64,
+                  color: Colors.orange,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                "Örnek Ürün Detayı",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Bu bir farazi örnek ürün detayıdır. Kendi ürünlerinizin detaylarını görmek ve yönetmek için giriş yapmalısınız.",
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(200, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  "Giriş Yap",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
