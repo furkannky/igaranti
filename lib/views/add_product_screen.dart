@@ -621,6 +621,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
                                   // Marka alanı
                                   Autocomplete<String>(
+                                    initialValue: TextEditingValue(
+                                      text: _brandController.text,
+                                    ),
                                     optionsBuilder:
                                         (TextEditingValue textEditingValue) {
                                           if (textEditingValue.text.isEmpty) {
@@ -695,8 +698,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                               // Marka zorunlu değil, sadece boş bırakılabilir
                                               return null;
                                             },
-                                            onChanged: (value) =>
-                                                setState(() {}),
+                                            onChanged: (value) {
+                                              _brandController.text = value;
+                                              setState(() {});
+                                            },
                                             onFieldSubmitted: (value) =>
                                                 onFieldSubmitted(),
                                           );
