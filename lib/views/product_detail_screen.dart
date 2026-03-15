@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:igaranti/services/pdf_service.dart';
 import 'package:igaranti/services/calendar_service.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/product_model.dart';
 import '../controllers/product_controller.dart';
 import 'edit_product_screen.dart';
 import 'add_service_record_screen.dart'; // YENİ EKLENDİ
 import 'login_screen.dart';
+import 'pdf_viewer_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -20,196 +21,204 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  ProductModel? product;
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProduct();
-  }
-
-  Future<void> _loadProduct() async {
-    final productController = Provider.of<ProductController>(
-      context,
-      listen: false,
-    );
-    final products = await productController.getProducts().first;
-    final foundProduct = products.firstWhere((p) => p.id == widget.productId);
-
-    setState(() {
-      product = foundProduct;
-      isLoading = false;
-    });
-  }
-
-
   @override
   Widget build(BuildContext context) {
+    final productController = Provider.of<ProductController>(context);
     final isGuest = FirebaseAuth.instance.currentUser == null;
     
     if (isGuest) {
       return _buildGuestView();
     }
-    
-    if (isLoading || product == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text("Ürün Detayı")),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
 
-    // Garanti durumu rengi hesaplama
-    Color statusColor = product!.remainingDays < 30
-        ? Colors.orange
-        : Colors.green;
-    if (product!.remainingDays <= 0) statusColor = Colors.red;
+    return StreamBuilder<List<ProductModel>>(
+      stream: productController.getProducts(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            appBar: AppBar(title: const Text("Ürün Detayı")),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(product!.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditProductScreen(product: product!),
-                ),
-              );
-              // Edit ekranından döndüğünde veriyi yenile
-              if (result == true && mounted) {
-                _loadProduct();
-              }
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () async {
-              final success = await CalendarService.addWarrantyExpiryReminder(
-                productName: product!.name,
-                brand: product!.brand,
-                expiryDate: product!.expiryDate,
-              );
-              if (success) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Takvim hatırlatıcısı eklendi!'),
-                  ),
-                );
-              } else {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Takvim eklenemedi!')),
-                );
-              }
-            },
-            tooltip: "Takvim Ekle",
-          ),
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf),
-            onPressed: () => PdfService.generateProductReport(product!),
-            tooltip: "PDF Raporu Oluştur",
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Ürün Bilgi Kartı (Özet Bilgiler)
-            _buildInfoCard(statusColor),
-            const SizedBox(height: 25),
+        if (snapshot.hasError) {
+          return Scaffold(
+            appBar: AppBar(title: const Text("Hata")),
+            body: Center(child: Text("Bir hata oluştu: ${snapshot.error}")),
+          );
+        }
 
-            // 2. Ürün Fotoğrafları
-            if (product!.imageUrls != null &&
-                product!.imageUrls!.isNotEmpty) ...[
-              const Text(
-                "Ürün Fotoğrafları",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        final products = snapshot.data ?? [];
+        final product = products.firstWhere(
+          (p) => p.id == widget.productId,
+          orElse: () => ProductModel(
+            name: "Yükleniyor...",
+            brand: "",
+            model: "",
+            purchaseDate: DateTime.now(),
+            warrantyMonths: 0,
+            category: "",
+          ),
+        );
+
+        if (product.id == null && product.name == "Yükleniyor...") {
+           return Scaffold(
+            appBar: AppBar(title: const Text("Ürün Bulunamadı")),
+            body: const Center(child: Text("Ürün bulunamadı veya silinmiş.")),
+          );
+        }
+
+        // Garanti durumu rengi hesaplama
+        Color statusColor = product.remainingDays < 30 ? Colors.orange : Colors.green;
+        if (product.remainingDays <= 0) statusColor = Colors.red;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(product.name),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditProductScreen(product: product),
+                    ),
+                  );
+                },
               ),
-              const SizedBox(height: 10),
-              _buildProductPhotosSection(),
-              const SizedBox(height: 25),
-            ],
-
-            // 3. Fatura ve Belgeler Bölümü
-            const Text(
-              "Fatura ve Belgeler",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            _buildInvoiceSection(),
-            const SizedBox(height: 25),
-
-            // 3. Yaşam Döngüsü (Servis Kayıtları) Bölümü
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Yaşam Döngüsü",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                // Yeni Kayıt Ekleme Butonu
-                TextButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            AddServiceRecordScreen(product: product!),
-                      ),
+              IconButton(
+                icon: const Icon(Icons.calendar_today),
+                onPressed: () async {
+                  final success = await CalendarService.addWarrantyExpiryReminder(
+                    productName: product.name,
+                    brand: product.brand,
+                    expiryDate: product.expiryDate,
+                  );
+                  if (success) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Takvim hatırlatıcısı eklendi!')),
                     );
-                  },
-                  icon: const Icon(Icons.add_moderator, size: 20),
-                  label: const Text("Yeni Kayıt"),
+                  }
+                },
+                tooltip: "Takvim Ekle",
+              ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoCard(product, statusColor),
+                const SizedBox(height: 15),
+                if (product.note != null && product.note!.trim().isNotEmpty) ...[
+                  _buildNoteSection(product),
+                  const SizedBox(height: 25),
+                ],
+                if (product.imageUrls != null && product.imageUrls!.isNotEmpty) ...[
+                  const Text("Ürün Fotoğrafları", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  _buildProductPhotosSection(product),
+                  const SizedBox(height: 25),
+                ],
+                const Text("Fatura ve Belgeler", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                _buildInvoiceSection(product),
+                const SizedBox(height: 25),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Yaşam Döngüsü", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => AddServiceRecordScreen(product: product)),
+                        );
+                      },
+                      icon: const Icon(Icons.add_moderator, size: 20),
+                      label: const Text("Yeni Kayıt"),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 10),
+                _buildServiceHistoryList(product),
+                const SizedBox(height: 25),
+                if (product.supportNumber != null && product.supportNumber!.isNotEmpty) ...[
+                  const Text("Destek", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  _buildSupportButton(product),
+                  const SizedBox(height: 30),
+                ],
               ],
             ),
-            const SizedBox(height: 10),
-            _buildServiceHistoryList(),
-            const SizedBox(height: 25),
+          ),
+        );
+      },
+    );
+  }
 
-            // 4. Destek ve Servis Butonları
-            const Text(
-              "Destek",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {}, // Marka destek hattı araması için
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: Colors.white.withValues(alpha: 0.1),
-                  foregroundColor: Colors.white,
-                ),
-                icon: const Icon(Icons.phone_forwarded),
-                label: const Text("Yetkili Servis ile İletişime Geç"),
-              ),
-            ),
-            const SizedBox(height: 30),
-          ],
+  Widget _buildNoteSection(ProductModel product) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.note_alt_outlined, size: 18, color: Colors.blueAccent),
+              SizedBox(width: 8),
+              Text("Notlar", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(product.note!.trim(), style: const TextStyle(fontSize: 14, color: Colors.white70, height: 1.5)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSupportButton(ProductModel product) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => _callSupportNumber(product.supportNumber!),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          backgroundColor: Colors.green.withValues(alpha: 0.1),
+          foregroundColor: Colors.green,
         ),
+        icon: const Icon(Icons.phone_forwarded),
+        label: Text("${product.supportNumber!} • Ara"),
       ),
     );
   }
 
   // Ürün Fotoğrafları Bölümü Widget'ı
-  Widget _buildProductPhotosSection() {
-    final List<String> images = product!.imageUrls!;
+  Widget _buildProductPhotosSection(ProductModel product) {
+    if (product.imageUrls == null || product.imageUrls!.isEmpty) return const SizedBox.shrink();
+    
+    final List<String> imageFiles = product.imageUrls!.where((url) => 
+        !ProductModel.isPdfUrl(url)).toList();
+
+    if (imageFiles.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return SizedBox(
       height: 140,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: images.length,
+        itemCount: imageFiles.length,
         itemBuilder: (context, index) {
-          final imageUrl = images[index];
+          final imageUrl = imageFiles[index];
           return GestureDetector(
             onTap: () => _showFullScreenImage(context, imageUrl, 'product_image_$imageUrl'),
             child: Hero(
@@ -221,9 +230,55 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(15),
                   border: Border.all(color: Colors.white24),
-                  image: DecorationImage(
-                    image: NetworkImage(imageUrl),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: Image.network(
+                    imageUrl,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      debugPrint('Resim yükleme hatası: $imageUrl - $error');
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.broken_image,
+                              color: Colors.white54,
+                              size: 40,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Resim\nYüklenemedi',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white54,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -235,8 +290,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   // Fatura / Görsel Bölümü Widget'ı
-  Widget _buildInvoiceSection() {
-    if (product!.invoiceImageUrl == null || product!.invoiceImageUrl!.isEmpty) {
+  Widget _buildInvoiceSection(ProductModel product) {
+    if (product.invoiceImageUrl == null || product.invoiceImageUrl?.isEmpty == true) {
       return Container(
         height: 150,
         width: double.infinity,
@@ -259,25 +314,48 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
     }
 
-    final imageUrl = product!.invoiceImageUrl!;
-    final isPdf = imageUrl.contains('.pdf?alt=media');
+    final imageUrl = product.invoiceImageUrl!;
+    final isPdf = imageUrl.toLowerCase().contains('.pdf');
+    
+    debugPrint('🔍 Fatura URL: $imageUrl');
+    debugPrint('🔍 PDF mi?: $isPdf');
+
+    // Sadece PDF ise göster, resim ise gösterme
+    if (!isPdf) {
+      return Container(
+        height: 150,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.receipt_long, size: 50, color: Colors.white54),
+            SizedBox(height: 8),
+            Text(
+              "Fatura veya Belge Eklenmemiş",
+              style: TextStyle(color: Colors.white54),
+            ),
+          ],
+        ),
+      );
+    }
 
     return GestureDetector(
       onTap: () {
-        if (!isPdf) {
-          _showFullScreenImage(context, imageUrl, 'invoice_$imageUrl');
-        } else {
-          // PDF ise indirme veya tarayıcıda açma işlemi yapılabilir.
-          // Şimdilik PDF raporu oluşturma metoduyla aynı servisi çağırabiliriz
-          // veya tarayıcıya yönlendirebiliriz.
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'PDF görüntüleme desteklenmiyor. Lütfen tarayıcıdan açın.',
-              ),
+        // PDF'i PDFViewerScreen'de aç
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PDFViewerScreen(
+              pdfUrl: imageUrl,
+              title: 'Garanti Belgesi/Fatura',
             ),
-          );
-        }
+          ),
+        );
       },
       child: Hero(
         tag: 'invoice_$imageUrl',
@@ -288,33 +366,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(15),
             border: Border.all(color: Colors.white24),
-            image: !isPdf
-                ? DecorationImage(
-                    image: NetworkImage(imageUrl),
-                    fit: BoxFit.cover,
-                  )
-                : null,
           ),
-          child: isPdf
-              ? const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.picture_as_pdf,
-                      color: Colors.redAccent,
-                      size: 50,
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      "PDF Belgesini Gör",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                )
-              : null,
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.picture_as_pdf,
+                color: Colors.redAccent,
+                size: 50,
+              ),
+              SizedBox(height: 8),
+              Text(
+                "PDF Belgesini Gör",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -339,7 +409,40 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             child: Center(
               child: Hero(
                 tag: heroTag,
-                child: Image.network(imageUrl, fit: BoxFit.contain),
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    debugPrint('Tam ekran resim hatası: $imageUrl - $error');
+                    return const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.broken_image,
+                          color: Colors.white54,
+                          size: 80,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Resim Yüklenemedi',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 3,
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -349,8 +452,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   // Servis Geçmişi Listesi Widget'ı
-  Widget _buildServiceHistoryList() {
-    if (product!.serviceHistory == null || product!.serviceHistory!.isEmpty) {
+  Widget _buildServiceHistoryList(ProductModel product) {
+    if (product.serviceHistory == null || product.serviceHistory!.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -374,10 +477,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: product!.serviceHistory!.length,
+      itemCount: product.serviceHistory!.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
-        final record = product!.serviceHistory![index];
+        final record = product.serviceHistory![index];
         return Card(
           child: ListTile(
             leading: CircleAvatar(
@@ -440,7 +543,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   // Üst Bilgi Kartı
-  Widget _buildInfoCard(Color statusColor) {
+  Widget _buildInfoCard(ProductModel product, Color statusColor) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -453,14 +556,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      product!.brand,
+                      product.brand.trim().isEmpty ? "Belirtilmemiş" : product.brand,
                       style: const TextStyle(
                         fontSize: 16,
                         color: Colors.white70,
                       ),
                     ),
                     Text(
-                      product!.name,
+                      product.name,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -478,7 +581,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    product!.remainingDays > 0 ? "GARANTİ VAR" : "SÜRESİ DOLDU",
+                    product.remainingDays > 0 ? "GARANTİ VAR" : "SÜRESİ DOLDU",
                     style: TextStyle(
                       color: statusColor,
                       fontWeight: FontWeight.bold,
@@ -491,17 +594,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             const Divider(height: 30),
             _infoRow(
               "Satın Alma:",
-              DateFormat('dd.MM.yyyy').format(product!.purchaseDate),
+              DateFormat('dd.MM.yyyy').format(product.purchaseDate),
             ),
             const SizedBox(height: 8),
             _infoRow(
               "Garanti Bitiş:",
-              DateFormat('dd.MM.yyyy').format(product!.expiryDate),
+              DateFormat('dd.MM.yyyy').format(product.expiryDate),
             ),
             const SizedBox(height: 8),
             _infoRow(
               "Kalan Süre:",
-              "${product!.remainingDays} Gün",
+              "${product.remainingDays} Gün",
               valueColor: statusColor,
             ),
           ],
@@ -528,6 +631,37 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _callSupportNumber(String phoneNumber) async {
+    try {
+      // Telefon numarasını temizle (sadece rakamlar)
+      final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+      final uri = Uri.parse('tel:$cleanNumber');
+      
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Arama yapılamadı: $phoneNumber'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Arama hatası: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Arama hatası: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildGuestView() {

@@ -7,6 +7,8 @@ import '../services/storage_service.dart';
 import '../services/notification_service.dart';
 import '../services/error_handler_service.dart';
 
+enum ProductSortType { shortestWarranty, longestWarranty }
+
 class ProductController extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -15,6 +17,14 @@ class ProductController extends ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+
+  ProductSortType _sortType = ProductSortType.shortestWarranty;
+  ProductSortType get sortType => _sortType;
+
+  void setSortType(ProductSortType type) {
+    _sortType = type;
+    notifyListeners();
+  }
 
   // Yeni Ürün Ekleme (Kullanıcıya Bağlı)
   Future<bool> addProduct(
@@ -59,6 +69,10 @@ class ProductController extends ChangeNotifier {
 
       Map<String, dynamic> data = product.toMap();
       data['userId'] = uid;
+
+      debugPrint("🔥 Kaydedilecek marka: '${data['brand']}'");
+      debugPrint("🔥 Product.brand: '${product.brand}'");
+      debugPrint("🔥 Map içeriği: ${data.entries.where((e) => e.key.contains('brand')).toList()}");
 
       data['invoiceImageUrl'] = invoiceUrl;
       data['imageUrls'] = imageUrls;
@@ -141,7 +155,7 @@ class ProductController extends ChangeNotifier {
             "🔥 Firestore'dan toplam ${snapshot.docs.length} ürün geldi",
           );
 
-          final userProducts = snapshot.docs
+          final allProducts = snapshot.docs
               .map((doc) {
                 final data = doc.data();
                 debugPrint("🔥 Ürün verisi: $data");
@@ -164,12 +178,22 @@ class ProductController extends ChangeNotifier {
               .toList();
 
           // Bileşik dizin hatası olmaması için cihaz (client) tarafında sıralıyoruz
-          userProducts.sort((a, b) => a.expiryDate.compareTo(b.expiryDate));
+          if (_sortType == ProductSortType.shortestWarranty) {
+            allProducts.sort((a, b) => a.remainingDays.compareTo(b.remainingDays));
+          } else {
+            allProducts.sort((a, b) => b.remainingDays.compareTo(a.remainingDays));
+          }
+
+          debugPrint("🔥 Sıralama detayları:");
+          for (int i = 0; i < allProducts.length && i < 5; i++) {
+            final product = allProducts[i];
+            debugPrint("  ${i + 1}. ${product.name} - Kalan: ${product.remainingDays} gün - Bitiş: ${product.expiryDate.toString().split(' ')[0]}");
+          }
 
           debugPrint(
-            "🔥 Kullanıcının sıralı ürün sayısı: ${userProducts.length}",
+            "🔥 Kullanıcının sıralı ürün sayısı: ${allProducts.length} (Sıralama: $_sortType)",
           );
-          return userProducts;
+          return allProducts;
         });
   }
 

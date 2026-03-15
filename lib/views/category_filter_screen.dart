@@ -37,9 +37,10 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _productsStream ??= Provider.of<ProductController>(
+    // Sıralama tipi değiştiğinde yeni stream'i dinlemek için her seferinde güncellemeliyiz
+    _productsStream = Provider.of<ProductController>(
       context,
-      listen: false,
+      listen: true, // Listen true olmalı
     ).getProducts();
   }
 
@@ -51,6 +52,67 @@ class _CategoryFilterScreenState extends State<CategoryFilterScreen> {
           "Kategori Filtresi",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        actions: [
+          Consumer<ProductController>(
+            builder: (context, controller, child) {
+              return PopupMenuButton<ProductSortType>(
+                icon: const Icon(Icons.sort_rounded),
+                tooltip: "Sıralama",
+                onSelected: (ProductSortType result) {
+                  controller.setSortType(result);
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<ProductSortType>>[
+                  PopupMenuItem<ProductSortType>(
+                    value: ProductSortType.shortestWarranty,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.arrow_downward_rounded,
+                          size: 18,
+                          color: controller.sortType == ProductSortType.shortestWarranty
+                              ? Colors.blue
+                              : Colors.black54,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Kalan: Azdan Çoğa',
+                          style: TextStyle(
+                            color: controller.sortType == ProductSortType.shortestWarranty
+                                ? Colors.blue
+                                : Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<ProductSortType>(
+                    value: ProductSortType.longestWarranty,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.arrow_upward_rounded,
+                          size: 18,
+                          color: controller.sortType == ProductSortType.longestWarranty
+                              ? Colors.blue
+                              : Colors.black54,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Kalan: Çoktan Aza',
+                          style: TextStyle(
+                            color: controller.sortType == ProductSortType.longestWarranty
+                                ? Colors.blue
+                                : Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
       body: StreamBuilder<List<ProductModel>>(
         stream: _productsStream,

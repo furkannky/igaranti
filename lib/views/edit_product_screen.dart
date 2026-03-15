@@ -623,29 +623,60 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                   const Divider(color: Colors.white24),
                                   const SizedBox(height: 8),
                                   Autocomplete<String>(
-                                    initialValue: TextEditingValue(text: _brandController.text),
-                                    optionsBuilder: (TextEditingValue textEditingValue) {
-                                      if (textEditingValue.text.isEmpty) return const Iterable<String>.empty();
-                                      final brands = PopularBrands.getBrandsForCategory(_selectedCategory);
-                                      return brands.where((brand) => brand.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+                                    initialValue: TextEditingValue(
+                                      text: _brandController.text,
+                                    ),
+                                    optionsBuilder:
+                                        (TextEditingValue textEditingValue) {
+                                      if (textEditingValue.text.isEmpty) {
+                                        return const Iterable<String>.empty();
+                                      }
+                                      final brands =
+                                          PopularBrands.getBrandsForCategory(
+                                        _selectedCategory,
+                                      );
+                                      return brands.where((brand) => brand
+                                          .toLowerCase()
+                                          .contains(textEditingValue.text
+                                              .toLowerCase()));
                                     },
                                     onSelected: (String selection) {
                                       _brandController.text = selection;
                                       setState(() {});
                                     },
-                                    fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                                    fieldViewBuilder: (context,
+                                        textEditingController,
+                                        focusNode,
+                                        onFieldSubmitted) {
+                                      // Sadece değerler farklıysa (rebuild sırasında) senkronize et
+                                      if (textEditingController.text !=
+                                          _brandController.text) {
+                                        textEditingController.text =
+                                            _brandController.text;
+                                      }
                                       return TextFormField(
                                         controller: textEditingController,
                                         focusNode: focusNode,
                                         decoration: const InputDecoration(
                                           labelText: "Marka *",
-                                          labelStyle: TextStyle(color: Colors.white70),
+                                          labelStyle:
+                                              TextStyle(color: Colors.white70),
                                           hintText: "Marka girin veya seçin",
-                                          hintStyle: TextStyle(color: Colors.white38),
-                                          enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
-                                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blueAccent)),
+                                          hintStyle:
+                                              TextStyle(color: Colors.white38),
+                                          enabledBorder: OutlineInputBorder(
+                                              borderSide: BorderSide(
+                                                  color: Colors.white38)),
+                                          focusedBorder: OutlineInputBorder(
+                                              borderSide: BorderSide(
+                                                  color: Colors.blueAccent)),
                                         ),
-                                        style: const TextStyle(color: Colors.white),
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                        validator: (value) => _brandController
+                                                .text.isEmpty
+                                            ? "Lütfen marka seçin veya girin"
+                                            : null,
                                         onChanged: (value) {
                                           _brandController.text = value;
                                           setState(() {});
@@ -938,7 +969,17 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                   padding: const EdgeInsets.only(right: 10),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(10),
-                                    child: Image.network(url, height: 120, width: 120, fit: BoxFit.cover),
+                                    child: Image.network(
+                                      url, 
+                                      height: 120, 
+                                      width: 120, 
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => Container(
+                                        height: 120, width: 120,
+                                        color: Colors.white10,
+                                        child: const Icon(Icons.broken_image, color: Colors.white54),
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 Positioned(
@@ -1013,7 +1054,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
                                     child: _newInvoiceFile != null
-                                        ? (_newInvoiceFile!.path.toLowerCase().endsWith('.pdf')
+                                        ? (ProductModel.isPdfUrl(_newInvoiceFile!.path)
                                           ? Container(
                                               color: Colors.red.withValues(alpha: 0.1),
                                               child: Column(
@@ -1026,7 +1067,28 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                               ),
                                             )
                                           : Image.file(_newInvoiceFile!, fit: BoxFit.cover))
-                                        : Image.network(_existingInvoiceUrl!, fit: BoxFit.cover),
+                                        : (ProductModel.isPdfUrl(_existingInvoiceUrl)
+                                            ? Container(
+                                                color: Colors.red.withValues(alpha: 0.1),
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: const [
+                                                    Icon(Icons.picture_as_pdf, color: Colors.redAccent, size: 50),
+                                                    SizedBox(height: 8),
+                                                    Text("Mevcut PDF Fatura", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                                                  ],
+                                                ),
+                                              )
+                                            : Image.network(
+                                                _existingInvoiceUrl!, 
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) => Container(
+                                                  color: Colors.white10,
+                                                  child: const Center(
+                                                    child: Icon(Icons.broken_image, color: Colors.white54, size: 40),
+                                                  ),
+                                                ),
+                                              )),
                                   ),
                                 ),
                                 Positioned(

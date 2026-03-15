@@ -39,6 +39,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _brandController = TextEditingController();
   final _modelController = TextEditingController();
   final _noteController = TextEditingController(); // Not alanı eklendi
+  final _supportNumberController = TextEditingController(); // Destek numarası eklendi
   final _customWarrantyMonthsController =
       TextEditingController(); // Manuel garanti süresi (Ay)
   final _customWarrantyYearsController =
@@ -88,6 +89,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _brandController.dispose();
     _modelController.dispose();
     _noteController.dispose();
+    _supportNumberController.dispose();
     _customWarrantyMonthsController.dispose();
     _customWarrantyYearsController.dispose();
     super.dispose();
@@ -626,86 +628,89 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                     ),
                                     optionsBuilder:
                                         (TextEditingValue textEditingValue) {
-                                          if (textEditingValue.text.isEmpty) {
-                                            return const Iterable<
-                                              String
-                                            >.empty();
-                                          }
-                                          final brands =
-                                              PopularBrands.getBrandsForCategory(
-                                                _selectedCategory,
-                                              );
-                                          return brands.where((brand) {
-                                            return brand.toLowerCase().contains(
+                                      if (textEditingValue.text.isEmpty) {
+                                        return const Iterable<String>.empty();
+                                      }
+                                      final brands =
+                                          PopularBrands.getBrandsForCategory(
+                                        _selectedCategory,
+                                      );
+                                      return brands.where((brand) {
+                                        return brand.toLowerCase().contains(
                                               textEditingValue.text
                                                   .toLowerCase(),
                                             );
-                                          });
-                                        },
+                                      });
+                                    },
                                     onSelected: (String selection) {
                                       _brandController.text = selection;
                                       setState(() {});
                                     },
-                                    fieldViewBuilder:
-                                        (
-                                          context,
-                                          textEditingController,
-                                          focusNode,
-                                          onFieldSubmitted,
-                                        ) {
-                                          return TextFormField(
-                                            controller: textEditingController,
-                                            focusNode: focusNode,
-                                            decoration: const InputDecoration(
-                                              labelText: "Marka *",
-                                              labelStyle: TextStyle(
-                                                color: Colors.white70,
-                                              ),
-                                              hintText:
-                                                  "Marka girin veya seçin",
-                                              hintStyle: TextStyle(
-                                                color: Colors.white38,
-                                              ),
-                                              border: OutlineInputBorder(
-                                                borderRadius: BorderRadius.all(
-                                                  Radius.circular(8),
-                                                ),
-                                                borderSide: BorderSide(
-                                                  color: Colors.white38,
-                                                ),
-                                              ),
-                                              enabledBorder: OutlineInputBorder(
-                                                borderRadius: BorderRadius.all(
-                                                  Radius.circular(8),
-                                                ),
-                                                borderSide: BorderSide(
-                                                  color: Colors.white38,
-                                                ),
-                                              ),
-                                              focusedBorder: OutlineInputBorder(
-                                                borderRadius: BorderRadius.all(
-                                                  Radius.circular(8),
-                                                ),
-                                                borderSide: BorderSide(
-                                                  color: Colors.blueAccent,
-                                                ),
-                                              ),
+                                    fieldViewBuilder: (
+                                      context,
+                                      textEditingController,
+                                      focusNode,
+                                      onFieldSubmitted,
+                                    ) {
+                                      // Sadece değerler farklıysa (rebuild sırasında) senkronize et
+                                      if (textEditingController.text !=
+                                          _brandController.text) {
+                                        textEditingController.text =
+                                            _brandController.text;
+                                      }
+
+                                      return TextFormField(
+                                        controller: textEditingController,
+                                        focusNode: focusNode,
+                                        decoration: const InputDecoration(
+                                          labelText: "Marka *",
+                                          labelStyle: TextStyle(
+                                            color: Colors.white70,
+                                          ),
+                                          hintText: "Marka girin veya seçin",
+                                          hintStyle: TextStyle(
+                                            color: Colors.white38,
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.all(
+                                              Radius.circular(8),
                                             ),
-                                            style: const TextStyle(
-                                              color: Colors.white,
+                                            borderSide: BorderSide(
+                                              color: Colors.white38,
                                             ),
-                                            validator: (value) {
-                                              // Marka zorunlu değil, sadece boş bırakılabilir
-                                              return null;
-                                            },
-                                            onChanged: (value) {
-                                              _brandController.text = value;
-                                              setState(() {});
-                                            },
-                                            onFieldSubmitted: (value) =>
-                                                onFieldSubmitted(),
-                                          );
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.all(
+                                              Radius.circular(8),
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.white38,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.all(
+                                              Radius.circular(8),
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.blueAccent,
+                                            ),
+                                          ),
+                                        ),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                        validator: (value) => _brandController
+                                                .text.isEmpty
+                                            ? "Lütfen marka seçin veya girin"
+                                            : null,
+                                        onChanged: (value) {
+                                          _brandController.text = value;
+                                          setState(() {});
                                         },
+                                        onFieldSubmitted: (value) =>
+                                            onFieldSubmitted(),
+                                      );
+                                    },
                                   ),
 
                                   const SizedBox(height: 12),
@@ -1336,9 +1341,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
                                         child:
-                                            _selectedInvoiceFile!.path
-                                                .toLowerCase()
-                                                .endsWith('.pdf')
+                                            ProductModel.isPdfUrl(_selectedInvoiceFile!.path)
                                             ? Container(
                                                 color: Colors.red.withValues(
                                                   alpha: 0.1,
@@ -1417,6 +1420,131 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
                   const SizedBox(height: 30),
 
+                  // Notlar
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.note_alt_outlined,
+                                color: Colors.blueAccent,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "Notlar (Opsiyonel)",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _noteController,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              hintText: "Ürün hakkında notlarınızı buraya yazın...",
+                              hintStyle: TextStyle(color: Colors.white38),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                            ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                            onChanged: (value) => setState(() {}),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Destek Numarası Alanı
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.phone,
+                                color: Colors.greenAccent,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "Destek Numarası (Opsiyonel)",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            "Yetkili servis veya destek hattı numarası",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _supportNumberController,
+                            decoration: const InputDecoration(
+                              labelText: "Destek Numarası",
+                              labelStyle: TextStyle(color: Colors.white70),
+                              hintText: "Örn: 0850 123 45 67",
+                              hintStyle: TextStyle(color: Colors.white38),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(8)),
+                                borderSide: BorderSide(color: Colors.white38),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(8)),
+                                borderSide: BorderSide(color: Colors.white38),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(8)),
+                                borderSide: BorderSide(color: Colors.greenAccent),
+                              ),
+                              prefixIcon: Icon(Icons.phone, color: Colors.white54),
+                            ),
+                            style: const TextStyle(color: Colors.white),
+                            keyboardType: TextInputType.phone,
+                            onChanged: (value) => setState(() {}),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
                   // Kaydet Butonu
                   SizedBox(
                     width: double.infinity,
@@ -1479,6 +1607,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
         category: _selectedCategory,
         isOnlineStore: _isOnline,
         note: _noteController.text.trim(),
+        supportNumber: _supportNumberController.text.trim().isEmpty
+            ? null
+            : _supportNumberController.text.trim(),
       );
 
       try {
@@ -1550,36 +1681,45 @@ class _AddProductScreenState extends State<AddProductScreen> {
     if (!hasPermission) return;
 
     final daysBeforeExpiry = await _settingsService.getDaysBeforeExpiry();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day); // Bugünün başı
 
-    // Normal hatırlatma
-    if (product.remainingDays > daysBeforeExpiry) {
-      final normalNotificationDate = product.expiryDate.subtract(
-        Duration(days: daysBeforeExpiry),
-      );
+    debugPrint("🔔 Bildirim planlama: ${product.name}");
+    debugPrint("🔔 Kalan gün: ${product.remainingDays}");
+    debugPrint("🔔 Ayarlanan gün: $daysBeforeExpiry");
+    debugPrint("🔔 Bitiş tarihi: ${product.expiryDate}");
 
+    // Normal hatırlatma - ayarlanan gün kadar kala
+    final targetDate = product.expiryDate.subtract(Duration(days: daysBeforeExpiry));
+    if (targetDate.isAfter(today) || targetDate.isAtSameMomentAs(today)) {
       await _notificationService.scheduleWarrantyNotification(
         id: product.id.hashCode,
         title: "Garanti Bitişi Yaklaşıyor",
         body:
             "${product.name} ürününün garantisi $daysBeforeExpiry gün içinde bitecek",
-        scheduledDate: normalNotificationDate,
+        scheduledDate: targetDate,
         payload: product.id,
       );
+      debugPrint("🔔 Normal bildirim planlandı: ${targetDate.toString().split(' ')[0]}");
+    } else {
+      debugPrint("🔔 Normal bildirim planlanmadı - tarih geçti: ${targetDate.toString().split(' ')[0]}");
     }
 
-    // Kritik hatırlatma (7 gün kala)
+    // Kritik hatırlatma (7 gün kala) - sadece 7 günden fazla kalan ürünler için
     if (product.remainingDays > 7) {
-      final criticalNotificationDate = product.expiryDate.subtract(
-        const Duration(days: 7),
-      );
-
-      await _notificationService.scheduleCriticalNotification(
-        id: product.id.hashCode + 100000,
-        title: "Kritik Garanti Uyarısı",
-        body: "${product.name} ürününün garantisi 7 gün içinde bitecek!",
-        scheduledDate: criticalNotificationDate,
-        payload: product.id,
-      );
+      final criticalDate = product.expiryDate.subtract(const Duration(days: 7));
+      if (criticalDate.isAfter(today) || criticalDate.isAtSameMomentAs(today)) {
+        await _notificationService.scheduleCriticalNotification(
+          id: product.id.hashCode + 100000,
+          title: "Kritik Garanti Uyarısı",
+          body: "${product.name} ürününün garantisi 7 gün içinde bitecek!",
+          scheduledDate: criticalDate,
+          payload: product.id,
+        );
+        debugPrint("🔔 Kritik bildirim planlandı: ${criticalDate.toString().split(' ')[0]}");
+      } else {
+        debugPrint("🔔 Kritik bildirim planlanmadı - tarih geçti: ${criticalDate.toString().split(' ')[0]}");
+      }
     }
   }
 }

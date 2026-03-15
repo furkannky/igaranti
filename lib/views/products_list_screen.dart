@@ -38,9 +38,10 @@ class _ProductsListScreenState extends State<ProductsListScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _productsStream ??= Provider.of<ProductController>(
+    // Sıralama tipi değiştiğinde yeni stream'i dinlemek için her seferinde güncellemeliyiz
+    _productsStream = Provider.of<ProductController>(
       context,
-      listen: false,
+      listen: true, // Listen true olmalı ki controller notify edince burası tekrar çalışsın
     ).getProducts();
   }
 
@@ -127,6 +128,67 @@ class _ProductsListScreenState extends State<ProductsListScreen>
           widget.title,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
+        actions: [
+          Consumer<ProductController>(
+            builder: (context, controller, child) {
+              return PopupMenuButton<ProductSortType>(
+                icon: const Icon(Icons.sort_rounded),
+                tooltip: "Sıralama",
+                onSelected: (ProductSortType result) {
+                  controller.setSortType(result);
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<ProductSortType>>[
+                  PopupMenuItem<ProductSortType>(
+                    value: ProductSortType.shortestWarranty,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.arrow_downward_rounded,
+                          size: 18,
+                          color: controller.sortType == ProductSortType.shortestWarranty
+                              ? accentColor
+                              : Colors.white70,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Kalan: Azdan Çoğa',
+                          style: TextStyle(
+                            color: controller.sortType == ProductSortType.shortestWarranty
+                                ? accentColor
+                                : Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<ProductSortType>(
+                    value: ProductSortType.longestWarranty,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.arrow_upward_rounded,
+                          size: 18,
+                          color: controller.sortType == ProductSortType.longestWarranty
+                              ? accentColor
+                              : Colors.white70,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Kalan: Çoktan Aza',
+                          style: TextStyle(
+                            color: controller.sortType == ProductSortType.longestWarranty
+                                ? accentColor
+                                : Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
       body: StreamBuilder<List<ProductModel>>(
         stream: _productsStream,
@@ -372,12 +434,26 @@ class _ProductsListScreenState extends State<ProductsListScreen>
               // Product Name
               Text(
                 product.name,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: 22, // Biraz küçültüldü ki altına gelecek alanla dengeli dursun
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.5,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              // Brand & Model
+              Text(
+                "${product.brand} • ${product.model}",
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 16),
 

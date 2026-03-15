@@ -13,6 +13,7 @@ class ProductModel {
   String? note;
   bool isOnlineStore;
   List<ServiceRecord>? serviceHistory; // Kriter 6 için eklendi
+  String? supportNumber; // Destek numarası eklendi
 
   ProductModel({
     this.id,
@@ -27,13 +28,14 @@ class ProductModel {
     this.note,
     this.isOnlineStore = false,
     this.serviceHistory,
+    this.supportNumber, // Destek numarası eklendi
   });
 
   // Garanti Bitiş Tarihini Hesapla
   DateTime get expiryDate {
     return DateTime(
-      purchaseDate.year,
-      purchaseDate.month + warrantyMonths,
+      purchaseDate.year + (purchaseDate.month + warrantyMonths) ~/ 12,
+      (purchaseDate.month + warrantyMonths) % 12,
       purchaseDate.day,
     );
   }
@@ -41,8 +43,22 @@ class ProductModel {
   // Kalan Günü Hesapla
   int get remainingDays {
     final now = DateTime.now();
-    final difference = expiryDate.difference(now).inDays;
+    final today = DateTime(now.year, now.month, now.day); // Bugünün başı
+    final expiryDay = DateTime(expiryDate.year, expiryDate.month, expiryDate.day); // Bitiş gününün başı
+    final difference = expiryDay.difference(today).inDays;
     return difference;
+  }
+
+  // URL'nin PDF olup olmadığını kontrol et
+  static bool isPdfUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+    try {
+      final uri = Uri.parse(url);
+      final path = uri.path.toLowerCase();
+      return path.endsWith('.pdf');
+    } catch (_) {
+      return url.toLowerCase().contains('.pdf');
+    }
   }
 
   // Firebase'den Veri Okuma (Model Oluşturma)
@@ -67,6 +83,7 @@ class ProductModel {
       imageUrls: images,
       note: map['note'],
       isOnlineStore: map['isOnlineStore'] ?? false,
+      supportNumber: map['supportNumber'], // Destek numarası eklendi
       // Servis geçmişi varsa listeye çeviriyoruz
       serviceHistory: map['serviceHistory'] != null
           ? (map['serviceHistory'] as List)
@@ -89,6 +106,7 @@ class ProductModel {
       'imageUrls': imageUrls,
       'note': note,
       'isOnlineStore': isOnlineStore,
+      'supportNumber': supportNumber, // Destek numarası eklendi
       'expiryDate': Timestamp.fromDate(expiryDate), // Sorgular için önemli
       'serviceHistory': serviceHistory?.map((x) => x.toMap()).toList(),
     };

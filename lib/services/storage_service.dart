@@ -23,7 +23,12 @@ class StorageService {
       Reference ref = _storage.ref().child(fileName);
 
       // Dosyayı yükle
-      UploadTask uploadTask = ref.putFile(imageFile);
+      SettableMetadata? metadata;
+      if (extension == '.pdf') {
+        metadata = SettableMetadata(contentType: 'application/pdf');
+      }
+
+      UploadTask uploadTask = ref.putFile(imageFile, metadata);
 
       // Yükleme tamamlandığında indirme URL'sini al
       TaskSnapshot snapshot = await uploadTask;

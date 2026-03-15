@@ -259,27 +259,6 @@ class _NotificationSettingsScreenState
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  _scheduleTestNotification();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  "Test Bildirim Gönder",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -305,20 +284,6 @@ class _NotificationSettingsScreenState
         ),
       ),
     );
-  }
-
-  void _scheduleTestNotification() async {
-    await _notificationService.showInstantNotification(
-      id: 999999,
-      title: "Test Bildirimi",
-      body: "Bu bir test bildirimidir. iGaranti uygulaması çalışıyor!",
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Test bildirimi gönderildi")),
-      );
-    }
   }
 
   void _scheduleAllNotifications() async {
