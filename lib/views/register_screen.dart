@@ -89,10 +89,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final user = await _authService.signInWithGoogle();
 
-      if (mounted) {
-        if (user != null) {
-          Navigator.pop(context); // Giriş ekranına dön veya Dashboard'a git
-        }
+      if (mounted && user != null) {
+        // Google ile girişte giriş başarılıysa, Navigator stack'ini temizleyip ana ekrana dönüyoruz.
+        // main.dart'taki StreamBuilder zaten MainScreen'i User modunda açacaktır.
+        Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
       if (mounted) {

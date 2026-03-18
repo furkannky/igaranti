@@ -79,10 +79,15 @@ class _IGarantiAppState extends State<IGarantiApp> with WidgetsBindingObserver {
             }
 
             if (snapshot.hasData) {
-              if (!snapshot.data!.emailVerified) {
+              final user = snapshot.data!;
+              // Email/Şifre ile giriş yapanlar için doğrulama şartı,
+              // Google ile giriş yapanlar için (genelde otomatik doğrulanır) geçiyoruz.
+              bool isPasswordProvider = user.providerData.any((p) => p.providerId == 'password');
+              
+              if (isPasswordProvider && !user.emailVerified) {
                 return const EmailVerificationScreen();
               }
-              return MainScreen(key: ValueKey(snapshot.data!.uid));
+              return MainScreen(key: ValueKey(user.uid));
             }
 
             // Giriş yapmamış kullanıcılar için misafir modunda ana ekranı göster

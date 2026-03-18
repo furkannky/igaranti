@@ -83,23 +83,21 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final user = await _authService.signInWithGoogle();
 
-      if (mounted) {
-        if (user != null) {
-          if (!user.emailVerified) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Lütfen önce email adresinizi doğrulayın."),
-              ),
-            );
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const EmailVerificationScreen(),
-              ),
-            );
-          } else {
-            Navigator.pop(context);
-          }
+      if (mounted && user != null) {
+        // Google ile girişte genellikle email zaten doğrulanmıştır.
+        // Eğer değilse bile kullanıcıya bir şans veriyoruz veya main.dart'ın kontrol etmesini bekliyoruz.
+        if (!user.emailVerified) {
+          // Bazı nadir durumlarda Google email'i doğrulanmamış olabilir.
+          // Bu durumda EmailVerificationScreen'e yönlendiriyoruz.
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const EmailVerificationScreen(),
+            ),
+          );
+        } else {
+          // Giriş başarılı ve email doğrulanmışsa, Navigator stack'ini temizleyip ana ekrana dönüyoruz.
+          Navigator.of(context).popUntil((route) => route.isFirst);
         }
       }
     } catch (e) {

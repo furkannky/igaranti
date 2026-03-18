@@ -35,6 +35,7 @@ class AuthService {
 
       // 4. Firebase için yeni bir kimlik belgesi oluştur
       final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
