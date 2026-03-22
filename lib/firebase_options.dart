@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCEHzIOUIRhIxR5JzFe60nv1eU7tdh01Fw',
-    appId: '1:465161482930:android:f46f4501f9f728869f0fab',
+    appId: '1:465161482930:android:a58a6c824f346f059f0fab',
     messagingSenderId: '465161482930',
     projectId: 'igaranti',
     storageBucket: 'igaranti.firebasestorage.app',
@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '465161482930',
     projectId: 'igaranti',
     storageBucket: 'igaranti.firebasestorage.app',
-    iosBundleId: 'com.example.igaranti',
+    iosBundleId: 'com.harfur.igaranti',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -73,7 +73,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '465161482930',
     projectId: 'igaranti',
     storageBucket: 'igaranti.firebasestorage.app',
-    iosBundleId: 'com.example.igaranti',
+    iosBundleId: 'com.harfur.igaranti',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

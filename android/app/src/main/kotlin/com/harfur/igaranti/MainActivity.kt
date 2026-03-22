@@ -1,4 +1,4 @@
-package com.example.igaranti
+package com.harfur.igaranti
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -4,7 +4,10 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email'],
+    clientId: '465161482930-5jm3l56p225a7k5g9r3tp353lf8hmn0s.apps.googleusercontent.com',
+  );
 
   // Mevcut kullanıcıyı al
   User? get currentUser => _auth.currentUser;
@@ -15,7 +18,12 @@ class AuthService {
   // Google ile Giriş
   Future<User?> signInWithGoogle() async {
     try {
-      // 1. Google oturum açma işlemini başlat
+      debugPrint("Google Sign-In başlatılıyor...");
+      
+      // 1. Mevcut oturumu kontrol et ve temizle
+      await _googleSignIn.signOut();
+      
+      // 2. Google oturum açma işlemini başlat
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
@@ -23,23 +31,29 @@ class AuthService {
         return null;
       }
 
-      // 2. Google kimlik doğrulaması ayrıntılarını al
+      debugPrint("Google kullanıcısı alındı: ${googleUser.email}");
+
+      // 3. Google kimlik doğrulaması ayrıntılarını al
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
-      // 3. Token kontrolü
+      debugPrint("Google auth alındı, idToken: ${googleAuth.idToken != null ? 'var' : 'yok'}");
+
+      // 4. Token kontrolü
       if (googleAuth.idToken == null) {
-        debugPrint("Google token alınamadı");
+        debugPrint("Google idToken alınamadı");
         return null;
       }
 
-      // 4. Firebase için yeni bir kimlik belgesi oluştur
+      // 5. Firebase için yeni bir kimlik belgesi oluştur
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // 5. Firebase'de oturum aç
+      debugPrint("Firebase credential oluşturuldu");
+
+      // 6. Firebase'de oturum aç
       final UserCredential userCredential = await _auth.signInWithCredential(
         credential,
       );

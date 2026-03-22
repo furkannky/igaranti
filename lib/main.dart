@@ -9,6 +9,7 @@ import 'package:igaranti/controllers/product_controller.dart';
 import 'package:igaranti/views/email_verification_screen.dart';
 import 'package:igaranti/views/main_screen.dart';
 import 'package:igaranti/theme/app_theme.dart';
+import 'package:igaranti/services/notification_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -18,6 +19,9 @@ void main() async {
   // Türkçe locale'i başlat
   await initializeDateFormatting('tr_TR', null);
   Intl.defaultLocale = 'tr_TR';
+
+  // Bildirim servisini başlat
+  await NotificationService().init();
 
   runApp(const IGarantiApp());
 }
