@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'email_verification_screen.dart';
 import '../services/error_handler_service.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -59,12 +58,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // Kayıt başarılıysa doğrulama maili gönder ve Email Verification ekranına yönlendir
           await _authService.sendEmailVerification();
           if (currentContext.mounted) {
-            Navigator.pushReplacement(
-              currentContext,
-              MaterialPageRoute(
-                builder: (context) => const EmailVerificationScreen(),
-              ),
-            );
+            Navigator.of(currentContext).popUntil((route) => route.isFirst);
           }
         }
       }

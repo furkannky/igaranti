@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'register_screen.dart';
-import 'email_verification_screen.dart';
+
 import '../services/error_handler_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -51,14 +51,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 content: Text("Lütfen önce email adresinizi doğrulayın."),
               ),
             );
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const EmailVerificationScreen(),
-              ),
-            );
-          } else {
-            Navigator.pop(context);
+            // Doğrulanmış olsun veya olmasın, ilk rotaya (main.dart'taki StreamBuilder'a) dön.
+            // main.dart oradan EmailVerificationScreen veya MainScreen'i otomatik açacaktır.
+            Navigator.of(context).popUntil((route) => route.isFirst);
           }
         }
       }
@@ -86,19 +81,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted && user != null) {
         // Google ile girişte genellikle email zaten doğrulanmıştır.
         // Eğer değilse bile kullanıcıya bir şans veriyoruz veya main.dart'ın kontrol etmesini bekliyoruz.
-        if (!user.emailVerified) {
-          // Bazı nadir durumlarda Google email'i doğrulanmamış olabilir.
-          // Bu durumda EmailVerificationScreen'e yönlendiriyoruz.
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const EmailVerificationScreen(),
-            ),
-          );
-        } else {
-          // Giriş başarılı ve email doğrulanmışsa, Navigator stack'ini temizleyip ana ekrana dönüyoruz.
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
+        // Ekranları temizleyip köke (main.dart) dönüyoruz.
+        Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
       if (mounted) {

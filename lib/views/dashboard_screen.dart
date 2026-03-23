@@ -544,7 +544,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     );
                   } else {
                     // Giriş yapmış ise ürün ekleme ekranına yönlendir
-                    widget.onTabChange?.call(2); // 3. tab (index 2) = Ürün Ekle
+                    widget.onTabChange?.call(1); // 2. tab (index 1) = Ürün Ekle
                   }
                 },
                 isGuest,

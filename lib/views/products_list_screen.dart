@@ -41,7 +41,8 @@ class _ProductsListScreenState extends State<ProductsListScreen>
     // Sıralama tipi değiştiğinde yeni stream'i dinlemek için her seferinde güncellemeliyiz
     _productsStream = Provider.of<ProductController>(
       context,
-      listen: true, // Listen true olmalı ki controller notify edince burası tekrar çalışsın
+      listen:
+          true, // Listen true olmalı ki controller notify edince burası tekrar çalışsın
     ).getProducts();
   }
 
@@ -137,54 +138,63 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                 onSelected: (ProductSortType result) {
                   controller.setSortType(result);
                 },
-                itemBuilder: (BuildContext context) => <PopupMenuEntry<ProductSortType>>[
-                  PopupMenuItem<ProductSortType>(
-                    value: ProductSortType.shortestWarranty,
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.arrow_downward_rounded,
-                          size: 18,
-                          color: controller.sortType == ProductSortType.shortestWarranty
-                              ? accentColor
-                              : Colors.white70,
+                itemBuilder: (BuildContext context) =>
+                    <PopupMenuEntry<ProductSortType>>[
+                      PopupMenuItem<ProductSortType>(
+                        value: ProductSortType.shortestWarranty,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.arrow_downward_rounded,
+                              size: 18,
+                              color:
+                                  controller.sortType ==
+                                      ProductSortType.shortestWarranty
+                                  ? accentColor
+                                  : Colors.white70,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Kalan: Azdan Çoğa',
+                              style: TextStyle(
+                                color:
+                                    controller.sortType ==
+                                        ProductSortType.shortestWarranty
+                                    ? accentColor
+                                    : Colors.white70,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Kalan: Azdan Çoğa',
-                          style: TextStyle(
-                            color: controller.sortType == ProductSortType.shortestWarranty
-                                ? accentColor
-                                : Colors.white70,
-                          ),
+                      ),
+                      PopupMenuItem<ProductSortType>(
+                        value: ProductSortType.longestWarranty,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.arrow_upward_rounded,
+                              size: 18,
+                              color:
+                                  controller.sortType ==
+                                      ProductSortType.longestWarranty
+                                  ? accentColor
+                                  : Colors.white70,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Kalan: Çoktan Aza',
+                              style: TextStyle(
+                                color:
+                                    controller.sortType ==
+                                        ProductSortType.longestWarranty
+                                    ? accentColor
+                                    : Colors.white70,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<ProductSortType>(
-                    value: ProductSortType.longestWarranty,
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.arrow_upward_rounded,
-                          size: 18,
-                          color: controller.sortType == ProductSortType.longestWarranty
-                              ? accentColor
-                              : Colors.white70,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Kalan: Çoktan Aza',
-                          style: TextStyle(
-                            color: controller.sortType == ProductSortType.longestWarranty
-                                ? accentColor
-                                : Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                    ],
               );
             },
           ),
@@ -256,7 +266,9 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                   decoration: BoxDecoration(
                     color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: Colors.orange.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: const Row(
                     children: [
@@ -288,10 +300,7 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                     prefixIcon: const Icon(Icons.search, color: Colors.white54),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: Icon(
-                              Icons.clear,
-                              color: Colors.white54,
-                            ),
+                            icon: Icon(Icons.clear, color: Colors.white54),
                             onPressed: () {
                               _searchController.clear();
                               _searchFocusNode.requestFocus();
@@ -315,12 +324,18 @@ class _ProductsListScreenState extends State<ProductsListScreen>
               // Filtre Sonuçları
               Expanded(
                 child: filteredProducts.isEmpty
-                    ? _buildEmptyState(context, isGuest: FirebaseAuth.instance.currentUser == null)
+                    ? _buildEmptyState(
+                        context,
+                        isGuest: FirebaseAuth.instance.currentUser == null,
+                      )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemCount: filteredProducts.length,
                         itemBuilder: (context, index) {
-                          return _buildProductCard(filteredProducts[index], isGuest);
+                          return _buildProductCard(
+                            filteredProducts[index],
+                            isGuest,
+                          );
                         },
                       ),
               ),
@@ -436,7 +451,8 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                 product.name,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 22, // Biraz küçültüldü ki altına gelecek alanla dengeli dursun
+                  fontSize:
+                      22, // Biraz küçültüldü ki altına gelecek alanla dengeli dursun
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.5,
                 ),
@@ -464,7 +480,9 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surface.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -473,7 +491,9 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                     Icon(
                       Icons.calendar_today,
                       size: 16,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                     const SizedBox(width: 10),
                     Text(
@@ -563,7 +583,10 @@ class _ProductsListScreenState extends State<ProductsListScreen>
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
               );
             },
-            child: const Text("Giriş Yap", style: TextStyle(color: Colors.blueAccent)),
+            child: const Text(
+              "Giriş Yap",
+              style: TextStyle(color: Colors.blueAccent),
+            ),
           ),
         ],
       ),
@@ -605,30 +628,35 @@ class _ProductsListScreenState extends State<ProductsListScreen>
 
   Widget _buildEmptyState(BuildContext context, {required bool isGuest}) {
     final bool isSearching = _searchController.text.isNotEmpty;
-    
+
     String title = "Kasa Boş";
-    String subtitle = "Henüz hiç ürün eklememişsiniz. İlk ürününüzü ekleyerek takibe başlayın!";
+    String subtitle =
+        "Henüz hiç ürün eklememişsiniz. İlk ürününüzü ekleyerek takibe başlayın!";
     IconData icon = Icons.inventory_2_rounded;
 
     if (isGuest) {
       title = "Oturum Açın";
-      subtitle = "Ürünlerinizi ve garanti sürelerinizi takip etmek için giriş yapmalısınız.";
+      subtitle =
+          "Ürünlerinizi ve garanti sürelerinizi takip etmek için giriş yapmalısınız.";
       icon = Icons.lock_outline_rounded;
     } else if (isSearching) {
       title = "Sonuç Bulunamadı";
-      subtitle = "Aradığınız kriterlere uygun ürün bulunamadı. Lütfen aramayı düzenleyin.";
+      subtitle =
+          "Aradığınız kriterlere uygun ürün bulunamadı. Lütfen aramayı düzenleyin.";
       icon = Icons.search_off_rounded;
     } else {
       // Filter specific empty states
       switch (widget.filterType) {
         case ProductFilterType.active:
           title = "Aktif Garanti Yok";
-          subtitle = "Şu anda garanti süresi devam eden bir ürününüz bulunmuyor.";
+          subtitle =
+              "Şu anda garanti süresi devam eden bir ürününüz bulunmuyor.";
           icon = Icons.check_circle_outline_rounded;
           break;
         case ProductFilterType.expiring:
           title = "Yaklaşan Bitiş Yok";
-          subtitle = "Önümüzdeki 30 gün içinde garantisi bitecek bir ürününüz bulunmuyor. Her şey yolunda!";
+          subtitle =
+              "Önümüzdeki 30 gün içinde garantisi bitecek bir ürününüz bulunmuyor. Her şey yolunda!";
           icon = Icons.notifications_none_rounded;
           break;
         case ProductFilterType.expired:
@@ -638,133 +666,155 @@ class _ProductsListScreenState extends State<ProductsListScreen>
           break;
         case ProductFilterType.all:
           title = "Kasa Boş";
-          subtitle = "Henüz hiç ürün eklememişsiniz. İlk ürününüzü ekleyerek takibe başlayın!";
+          subtitle =
+              "Henüz hiç ürün eklememişsiniz. İlk ürününüzü ekleyerek takibe başlayın!";
           icon = Icons.inventory_2_rounded;
           break;
       }
     }
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  width: 1,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 16.0,
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00D4FF).withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 60,
-                      color: const Color(0xFF00D4FF),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 14,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-                  if (isGuest)
-                    ElevatedButton(
-                      onPressed: () {
-                        if (_isNavigating) return;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00D4FF),
-                        foregroundColor: Colors.black,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        "Giriş Yap",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    )
-                  else if (isSearching)
-                    OutlinedButton(
-                      onPressed: () {
-                        _searchController.clear();
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF00D4FF),
-                        side: const BorderSide(color: Color(0xFF00D4FF)),
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          width: 1,
                         ),
                       ),
-                      child: const Text(
-                        "Aramayı Temizle",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    )
-                  else
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // Notify the user or use a scaffold messenger for now
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Yeni ürün eklemek için '+' butonuna tıklayın."),
-                            behavior: SnackBarBehavior.floating,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFF00D4FF,
+                              ).withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              icon,
+                              size: 60,
+                              color: const Color(0xFF00D4FF),
+                            ),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text("Ürün Ekle"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00D4FF),
-                        foregroundColor: Colors.black,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
+                          const SizedBox(height: 24),
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 14,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 32),
+                          if (isGuest)
+                            ElevatedButton(
+                              onPressed: () {
+                                if (_isNavigating) return;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const LoginScreen(),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00D4FF),
+                                foregroundColor: Colors.black,
+                                minimumSize: const Size(double.infinity, 50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                "Giriş Yap",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            )
+                          else if (isSearching)
+                            OutlinedButton(
+                              onPressed: () {
+                                _searchController.clear();
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF00D4FF),
+                                side: const BorderSide(
+                                  color: Color(0xFF00D4FF),
+                                ),
+                                minimumSize: const Size(double.infinity, 50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                              child: const Text(
+                                "Aramayı Temizle",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            )
+                          else
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                // Notify the user or use a scaffold messenger for now
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Yeni ürün eklemek için '+' butonuna tıklayın.",
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.add),
+                              label: const Text("Ürün Ekle"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00D4FF),
+                                foregroundColor: Colors.black,
+                                minimumSize: const Size(double.infinity, 50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                ],
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

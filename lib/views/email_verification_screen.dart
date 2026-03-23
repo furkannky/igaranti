@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
-import 'main_screen.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
@@ -52,10 +51,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
         if (_isEmailVerified) {
           _timer?.cancel();
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainScreen()),
-          );
+          // state değiştiği için main.dart'taki StreamBuilder (userChanges)
+          // otomatik olarak MainScreen'e geçişi sağlayacaktır.
         }
       }
     } on FirebaseAuthException catch (e) {
