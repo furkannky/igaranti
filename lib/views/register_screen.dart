@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/error_handler_service.dart';
@@ -86,6 +87,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (mounted && user != null) {
         // Google ile girişte giriş başarılıysa, Navigator stack'ini temizleyip ana ekrana dönüyoruz.
         // main.dart'taki StreamBuilder zaten MainScreen'i User modunda açacaktır.
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorHandlerService.handleError(context, e);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _handleAppleRegister() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final user = await _authService.signInWithApple();
+
+      if (mounted && user != null) {
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
@@ -282,6 +307,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                     ),
+                    if (Platform.isIOS) ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 55,
+                        child: ElevatedButton.icon(
+                          onPressed: _handleAppleRegister,
+                          icon: const Icon(Icons.apple, size: 28),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          label: const Text(
+                            "Apple ile Kayıt Ol / Giriş Yap",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
             ],

@@ -31,7 +31,17 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.465161482930-5jm3l56p225a7k5g9r3tp353lf8hmn0s</string>
+				<string>com.googleusercontent.apps.465161482930-2iuk1a64b6qvn3l236s3bscp0e5dtt15</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.harfur.igaranti</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.harfur.igaranti</string>
 			</array>
 		</dict>
 	</array>

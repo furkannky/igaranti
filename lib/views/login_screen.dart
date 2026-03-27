@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'register_screen.dart';
@@ -81,6 +82,31 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted && user != null) {
         // Google ile girişte genellikle email zaten doğrulanmıştır.
         // Eğer değilse bile kullanıcıya bir şans veriyoruz veya main.dart'ın kontrol etmesini bekliyoruz.
+        // Ekranları temizleyip köke (main.dart) dönüyoruz.
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorHandlerService.handleError(context, e);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _handleAppleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final user = await _authService.signInWithApple();
+
+      if (mounted && user != null) {
         // Ekranları temizleyip köke (main.dart) dönüyoruz.
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
@@ -284,6 +310,30 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
+                    if (Platform.isIOS) ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 55,
+                        child: ElevatedButton.icon(
+                          onPressed: _handleAppleSignIn,
+                          icon: const Icon(Icons.apple, size: 28),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          label: const Text(
+                            "Apple ile Giriş Yap",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
